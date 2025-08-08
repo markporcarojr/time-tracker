@@ -1,26 +1,147 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+:root {
+  /* Hard radius to match your look */
+  --radius: 2px;
+
+  /* Industrial light theme */
+  --background: #f2f2f2; /* paper */
+  --foreground: #111111; /* ink */
+
+  --card: #f2f2f2;
+  --card-foreground: #111111;
+
+  --popover: #f2f2f2;
+  --popover-foreground: #111111;
+
+  --primary: #e30613; /* red */
+  --primary-foreground: #ffffff;
+
+  --secondary: #ffd300; /* yellow */
+  --secondary-foreground: #111111;
+
+  --muted: #d9d9d9; /* steel-200 */
+  --muted-foreground: #6c6c6c; /* steel-500 */
+
+  --accent: #ffd300; /* keep accent as yellow */
+  --accent-foreground: #111111;
+
+  --destructive: #c10510; /* darker red for alerts */
+  --border: #333333; /* steel-700 */
+  --input: #333333; /* steel-700 */
+  --ring: #e30613; /* red focus ring */
+
+  /* Chart colors (optional) */
+  --chart-1: #e30613; /* red */
+  --chart-2: #ffd300; /* yellow */
+  --chart-3: #6c6c6c; /* steel-500 */
+  --chart-4: #333333; /* steel-700 */
+  --chart-5: #1e1e1e; /* steel-900 */
+
+  /* Sidebar */
+  --sidebar: #f2f2f2;
+  --sidebar-foreground: #111111;
+  --sidebar-primary: #e30613;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffd300;
+  --sidebar-accent-foreground: #111111;
+  --sidebar-border: #333333;
+  --sidebar-ring: #e30613;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.dark {
+  /* Industrial dark theme */
+  --background: #1e1e1e; /* steel-900 */
+  --foreground: #f2f2f2; /* paper */
+
+  --card: #1e1e1e;
+  --card-foreground: #f2f2f2;
+
+  --popover: #1e1e1e;
+  --popover-foreground: #f2f2f2;
+
+  --primary: #e30613;
+  --primary-foreground: #ffffff;
+
+  --secondary: #ffd300;
+  --secondary-foreground: #111111;
+
+  --muted: #333333; /* steel-700 */
+  --muted-foreground: #d9d9d9; /* steel-200 */
+
+  --accent: #ffd300;
+  --accent-foreground: #111111;
+
+  --destructive: #b0000f;
+  --border: #333333; /* steel-700 */
+  --input: #333333; /* steel-700 */
+  --ring: #ffd300; /* pop ring in dark */
+
+  /* Charts */
+  --chart-1: #ffd300;
+  --chart-2: #e30613;
+  --chart-3: #d9d9d9;
+  --chart-4: #6c6c6c;
+  --chart-5: #333333;
+
+  /* Sidebar */
+  --sidebar: #111111; /* near-black */
+  --sidebar-foreground: #f2f2f2;
+  --sidebar-primary: #e30613;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffd300;
+  --sidebar-accent-foreground: #111111;
+  --sidebar-border: #333333;
+  --sidebar-ring: #ffd300;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-background text-foreground;
+  }
 }
