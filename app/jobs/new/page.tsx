@@ -1,118 +1,72 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function NewJobPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<JobStatus>("ACTIVE");
-
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    setSubmitting(true);
+    const res = await fetch("/api/jobs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, description }),
+    });
 
-    try {
-      const res = await fetch("/api/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // backend should accept { name, description, status }
-        body: JSON.stringify({
-          name,
-          description: description || null,
-          status,
-        }),
-      });
-
-      if (!res.ok) {
-        const msg = await res.text().catch(() => "");
-        setError(msg || "Failed to create job.");
-        setSubmitting(false);
-        return;
-      }
-
-      const { id } = await res.json();
-      router.push(`/jobs/${id}`);
-    } catch (err) {
-      setError("Network error. Try again.");
-      setSubmitting(false);
+    if (!res.ok) {
+      alert(await res.text());
+      return;
     }
+    const job = await res.json();
+    router.push(`/jobs/${job.id}`); // go straight to timer page
   }
 
   return (
-    <div className="min-h-[60vh] p-6">
-      <form
-        onSubmit={handleSubmit}
-        className="mx-auto max-w-xl space-y-5 card-surface p-6"
-      >
-        <h1 className="text-2xl font-semibold">New Job</h1>
+    <div className="mx-auto max-w-xl p-6">
+      <Card className="shadow-plate border-border">
+        <CardHeader>
+          <CardTitle>New Job</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm">Job name</label>
+              <input
+                className="mt-1 w-full rounded-hard border border-border bg-background p-2"
+                placeholder="e.g. CNC Part #A12"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
 
-        {error && (
-          <div className="border border-destructive text-destructive rounded-[var(--radius)] px-3 py-2 bg-background">
-            {error}
-          </div>
-        )}
+            <div>
+              <label className="text-sm">Description</label>
+              <textarea
+                className="mt-1 w-full rounded-hard border border-border bg-background p-2"
+                rows={3}
+                placeholder="Optional"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
 
-        <div className="space-y-2">
-          <label className="text-sm">Job name</label>
-          <input
-            type="text"
-            placeholder="e.g. Turn OD + thread ops"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full bg-card text-foreground border border-border rounded-[var(--radius)] px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--ring)]"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm">Description (optional)</label>
-          <textarea
-            placeholder="Material, part count, notes…"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full min-h-28 bg-card text-foreground border border-border rounded-[var(--radius)] px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--ring)]"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm">Status</label>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as JobStatus)}
-            className="w-full bg-card text-foreground border border-border rounded-[var(--radius)] px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--ring)]"
-          >
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="PAUSED">PAUSED</option>
-            <option value="DONE">DONE</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="button-hard bg-primary text-primary-foreground px-4 py-2 rounded-[var(--radius)] disabled:opacity-60"
-          >
-            {submitting ? "Saving…" : "Save Job"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => router.push("/jobs")}
-            className="border border-border px-4 py-2 rounded-[var(--radius)]"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+            <div className="pt-2">
+              <Button
+                type="submit"
+                className="bg-primary text-primary-foreground"
+              >
+                Create
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

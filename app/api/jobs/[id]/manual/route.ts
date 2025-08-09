@@ -1,3 +1,4 @@
+// POST /api/jobs/[id]/manual
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
@@ -16,24 +17,29 @@ export async function POST(
 
   const jobId = Number(params.id);
   const { minutes } = await req.json();
+  const mins = Number(minutes) || 0;
+  if (mins <= 0)
+    return NextResponse.json({ error: "Invalid minutes" }, { status: 400 });
 
-  if (!minutes || typeof minutes !== "number" || minutes <= 0) {
-    return NextResponse.json(
-      { error: "minutes must be a positive number" },
-      { status: 400 }
-    );
-  }
+  const ms = mins * 60_000;
+  const now = new Date();
+  const start = new Date(now.getTime() - ms);
 
-  // Optional guard: don’t allow manual add if running
-  const job = await prisma.job.findFirst({
-    where: { id: jobId, userId: user.id },
-  });
-  if (!job)
-    return NextResponse.json({ error: "Job not found" }, { status: 404 });
-
-  await prisma.timeEntry.create({
-    data: { userId: user.id, jobId, manualMinutes: minutes },
-  });
+  await prisma.$transaction([
+    prisma.job.update({
+      where: { id: jobId },
+      data: { totalMilliseconds: { increment: ms } },
+    }),
+    prisma.timeEntry.create({
+      data: {
+        userId: user.id,
+        jobId,
+        startedAt: start,
+        endedAt: now,
+        manualMinutes: mins,
+      },
+    }),
+  ]);
 
   return NextResponse.json({ ok: true });
 }

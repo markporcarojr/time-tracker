@@ -1,21 +1,15 @@
-// app/jobs/page.tsx
-import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { notFound } from "next/navigation";
 
 export default async function JobListPage() {
   const { userId } = await auth();
-  if (!userId) return notFound();
+  if (!userId) return <div className="p-6">Unauthorized</div>;
 
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    select: { id: true },
-  });
-  if (!user) return notFound();
+  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+  if (!user) return <div className="p-6">No user</div>;
 
   const jobs = await prisma.job.findMany({
     where: { userId: user.id },
@@ -25,73 +19,49 @@ export default async function JobListPage() {
       name: true,
       description: true,
       status: true,
-      createdAt: true,
+      totalMilliseconds: true,
     },
   });
 
-  const badgeClass = (status: "ACTIVE" | "PAUSED" | "DONE") =>
-    ({
-      ACTIVE: "bg-primary text-primary-foreground",
-      PAUSED: "bg-muted text-foreground",
-      DONE: "bg-emerald-600 text-white",
-    }[status]);
-
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
+    <div className="mx-auto max-w-4xl p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">🛠 Jobs</h1>
-        <Button
-          asChild
-          className="bg-primary text-primary-foreground shadow-hard rounded-hard"
+        <h1 className="text-2xl font-semibold">Jobs</h1>
+        <Link
+          href="/jobs/new"
+          className="inline-flex items-center rounded-hard bg-primary px-4 py-2 text-primary-foreground shadow-hard hover:opacity-90"
         >
-          <Link href="/jobs/new">+ Add Job</Link>
-        </Button>
+          + Add Job
+        </Link>
       </div>
 
-      {/* Empty state */}
-      {jobs.length === 0 && (
-        <Card className="border-border rounded-hard shadow-plate">
-          <CardContent className="p-6 text-muted-foreground">
-            No jobs yet. Click <span className="font-medium">+ Add Job</span> to
-            get started.
-          </CardContent>
-        </Card>
-      )}
-
-      {/* List */}
-      <div className="grid gap-3">
-        {jobs.map((job) => (
-          <Link key={job.id} href={`/jobs/${job.id}`} className="group">
-            <Card className="border-border rounded-hard hover:shadow-plate transition-shadow">
-              <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <CardTitle className="text-base font-semibold group-hover:underline">
-                  {job.name}
-                </CardTitle>
-                <Badge
-                  className={`rounded-hard ${badgeClass(job.status as any)}`}
+      <Card className="shadow-plate border-border">
+        <CardHeader>
+          <CardTitle>All jobs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {jobs.map((job) => (
+              <li key={job.id}>
+                <Link
+                  href={`/jobs/${job.id}`}
+                  className="block rounded-hard border border-border bg-card p-4 shadow-hard hover:opacity-95"
                 >
-                  {job.status}
-                </Badge>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {job.description ? (
-                  <p className="text-sm text-muted-foreground">
-                    {job.description}
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground italic">
-                    No description
-                  </p>
-                )}
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Created {new Date(job.createdAt).toLocaleString()}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">{job.name}</div>
+                    <Badge variant="secondary">{job.status}</Badge>
+                  </div>
+                  {job.description ? (
+                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                      {job.description}
+                    </p>
+                  ) : null}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }
