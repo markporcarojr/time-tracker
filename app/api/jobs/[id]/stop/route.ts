@@ -2,10 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(_: Request, { params }: { params: { id: string } }) {
   const { userId } = await auth();
   if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -14,31 +11,32 @@ export async function POST(
   if (!user)
     return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  const jobId = parseInt(params.id);
+  const jobId = Number(params.id);
 
-  const job = await prisma.job.findUnique({
+  const job = await prisma.job.findFirst({
     where: { id: jobId, userId: user.id },
   });
-  if (!job?.runningSince) {
-    return NextResponse.json({ error: "Job not running" }, { status: 400 });
-  }
+  if (!job?.runningSince)
+    return NextResponse.json({ error: "Not running" }, { status: 400 });
 
   const now = new Date();
-  const durationMinutes = Math.floor(
-    (now.getTime() - job.runningSince.getTime()) / 60000
+  const minutes = Math.max(
+    0,
+    Math.floor((now.getTime() - new Date(job.runningSince).getTime()) / 60000)
   );
 
-  // Stop timer
-  await prisma.job.update({
-    where: { id: jobId },
-    data: { runningSince: null },
-  });
+  await prisma.$transaction([
+    prisma.job.update({ where: { id: jobId }, data: { runningSince: null } }),
+    prisma.timeEntry.updateMany({
+      where: {
+        userId: user.id,
+        jobId,
+        endedAt: null,
+        startedAt: { not: null },
+      },
+      data: { endedAt: now, duration: minutes },
+    }),
+  ]);
 
-  // Update time entry
-  await prisma.timeEntry.updateMany({
-    where: { jobId, userId: user.id, endedAt: null },
-    data: { endedAt: now, duration: durationMinutes },
-  });
-
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ ok: true, minutes });
 }

@@ -14,60 +14,48 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  clerkId   String   @unique
-  email     String?  @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  clerkId     String      @unique
+  createdAt   DateTime    @default(now())
+  email       String?     @unique
+  id          Int         @id @default(autoincrement())
   jobs        Job[]
+  name        String?
   timeEntries TimeEntry[]
 }
 
-// model TimeEntry {
-//   id            Int       @id @default(autoincrement())
-//   userId        Int
-//   jobId         Int?
-//   startedAt     DateTime
-//   endedAt       DateTime? // null while running
-//   // optional fast sum cache; keep if you want manual entries
-//   manualMinutes Int? // e.g., for “just input hours”
+model Job {
+  createdAt         DateTime    @default(now())
+  description       String?
+  id                Int         @id @default(autoincrement())
+  name              String
+  runningSince      DateTime? // null if not running
+  status            JobStatus   @default(ACTIVE)
+  timeEntries       TimeEntry[]
+  totalMilliseconds Int         @default(0)
+  updatedAt         DateTime    @updatedAt()
+  user              User        @relation(fields: [userId], references: [id])
+  userId            Int
 
-//   user      User     @relation(fields: [userId], references: [id])
-//   job       Job?     @relation(fields: [jobId], references: [id])
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
-// }
+  @@index([userId])
+}
+
 model TimeEntry {
+  duration      Int? // optional cache for finalized timer entries (minutes)
+  endedAt       DateTime? // null while running
   id            Int       @id @default(autoincrement())
-  userId        Int
+  job           Job       @relation(fields: [jobId], references: [id])
   jobId         Int
-  startedAt     DateTime?
-  endedAt       DateTime?
-  manualMinutes Int? // only set if not using start/stop
+  manualMinutes Int? // set for manual entries; leave null for timer entries
+  startedAt     DateTime? // null for manual-only entries
+  user          User      @relation(fields: [userId], references: [id])
+  userId        Int
 
-  user User @relation(fields: [userId], references: [id])
-  job  Job  @relation(fields: [jobId], references: [id])
+  @@index([jobId, startedAt])
+  @@index([userId, jobId])
 }
 
 enum JobStatus {
   ACTIVE
-  PAUSED
   DONE
-}
-
-model Job {
-  id           Int       @id @default(autoincrement())
-  userId       Int
-  name         String
-  description  String?
-  status       JobStatus @default(ACTIVE)
-  totalMinutes Int       @default(0) // ✅ sum cache
-  runningSince DateTime? // ✅ null when not running
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  user        User        @relation(fields: [userId], references: [id])
-  timeEntries TimeEntry[]
+  PAUSED
 }

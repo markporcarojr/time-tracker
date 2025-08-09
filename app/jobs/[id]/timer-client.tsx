@@ -1,136 +1,84 @@
-// app/jobs/[id]/timer-client.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function TimerClient({
   jobId,
-  initialTotalMinutes,
-  initialRunningSince,
+  runningSinceISO,
 }: {
   jobId: number;
-  initialTotalMinutes: number;
-  initialRunningSince: string | Date | null;
+  runningSinceISO: string | null;
 }) {
-  const [total, setTotal] = useState(initialTotalMinutes); // committed minutes
-  const [runningSince, setRunningSince] = useState<Date | null>(
-    initialRunningSince ? new Date(initialRunningSince) : null
-  );
-  const [busy, setBusy] = useState(false);
-  const tickRef = useRef<number | null>(null);
-
-  // live total shown
-  const displayMinutes = useMemo(() => {
-    if (!runningSince) return total;
-    const now = Date.now();
-    const extra = Math.floor((now - runningSince.getTime()) / 60000);
-    return total + Math.max(0, extra);
-  }, [total, runningSince]);
+  const router = useRouter();
+  const [running, setRunning] = useState(!!runningSinceISO);
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    if (!runningSince) return;
-    tickRef.current = window.setInterval(() => {
-      // just trigger re-render
-      setTotal((t) => t);
-    }, 1000);
-    return () => {
-      if (tickRef.current) clearInterval(tickRef.current);
-      tickRef.current = null;
-    };
-  }, [runningSince]);
+    if (!running || !runningSinceISO) return;
+    const startMs = new Date(runningSinceISO).getTime();
+
+    const tick = () => setElapsed(Math.floor((Date.now() - startMs) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [running, runningSinceISO]);
 
   const start = async () => {
-    if (busy || runningSince) return;
-    setBusy(true);
-    try {
-      // optimistic
-      const now = new Date();
-      setRunningSince(now);
-
-      const res = await fetch(`/api/jobs/${jobId}/start`, { method: "POST" });
-      if (!res.ok) throw new Error(await res.text());
-      // server returns runningSince if you want to sync, but optimistic is fine
-    } catch (e) {
-      // rollback
-      setRunningSince(null);
-      console.error(e);
-      alert("Failed to start timer.");
-    } finally {
-      setBusy(false);
-    }
+    await fetch(`/api/jobs/${jobId}/start`, { method: "POST" });
+    setRunning(true);
+    router.refresh();
   };
 
   const stop = async () => {
-    if (busy || !runningSince) return;
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/jobs/${jobId}/stop`, { method: "POST" });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      // trust server total; clears running
-      setTotal(data.totalMinutes);
-      setRunningSince(null);
-    } catch (e) {
-      console.error(e);
-      alert("Failed to stop timer.");
-    } finally {
-      setBusy(false);
+    await fetch(`/api/jobs/${jobId}/stop`, { method: "POST" });
+    setRunning(false);
+    router.refresh();
+  };
+
+  const addManual = async () => {
+    const minutes = Number(prompt("Add manual minutes:", "15") || 0);
+    if (minutes > 0) {
+      await fetch(`/api/jobs/${jobId}/manual`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ minutes }),
+      });
+      router.refresh();
     }
   };
 
-  const hours = Math.floor(displayMinutes / 60);
-  const mins = displayMinutes % 60;
+  const fmt = (s: number) =>
+    [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
+      .map((n) => String(n).padStart(2, "0"))
+      .join(":");
 
   return (
-    <div className="mt-6 card-surface border border-border rounded-hard shadow-plate p-6">
-      <div className="text-5xl font-mono tracking-tight select-none">
-        {String(hours).padStart(2, "0")}:{String(mins).padStart(2, "0")}
+    <div className="space-y-6">
+      <div className="text-6xl font-mono">
+        {running ? fmt(elapsed) : "00:00:00"}
       </div>
-
-      <div className="mt-4 flex gap-3">
-        {!runningSince ? (
+      <div className="flex gap-3">
+        {!running ? (
           <button
+            className="bg-green-600 text-white px-4 py-2 rounded"
             onClick={start}
-            disabled={busy}
-            className="bg-primary text-primary-foreground rounded-hard px-5 py-3 shadow-hard disabled:opacity-60"
           >
-            Start
+            ▶ Start
           </button>
         ) : (
           <button
+            className="bg-red-600 text-white px-4 py-2 rounded"
             onClick={stop}
-            disabled={busy}
-            className="bg-emerald-600 text-white rounded-hard px-5 py-3 shadow-hard disabled:opacity-60"
           >
-            Stop & Save
+            ■ Stop
           </button>
         )}
         <button
-          onClick={async () => {
-            const v = prompt("Add minutes:");
-            const m = Number(v);
-            if (!Number.isFinite(m) || m <= 0) return;
-            setBusy(true);
-            try {
-              // optimistic
-              if (runningSince) setRunningSince(null);
-              setTotal((t) => t + m);
-              const res = await fetch(`/api/jobs/${jobId}/add-minutes`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ minutes: m }),
-              });
-              if (!res.ok) throw new Error(await res.text());
-            } catch (e) {
-              console.error(e);
-              alert("Failed to add minutes.");
-            } finally {
-              setBusy(false);
-            }
-          }}
-          className="border border-border rounded-hard px-5 py-3"
+          className="bg-ink text-white px-4 py-2 rounded"
+          onClick={addManual}
         >
-          + Minutes
+          + Manual
         </button>
       </div>
     </div>

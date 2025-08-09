@@ -2,7 +2,10 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function POST(_: Request, { params }: { params: { id: string } }) {
+export async function POST(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   const { userId } = await auth();
   if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -12,32 +15,25 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const jobId = Number(params.id);
+  const { minutes } = await req.json();
 
+  if (!minutes || typeof minutes !== "number" || minutes <= 0) {
+    return NextResponse.json(
+      { error: "minutes must be a positive number" },
+      { status: 400 }
+    );
+  }
+
+  // Optional guard: don’t allow manual add if running
   const job = await prisma.job.findFirst({
     where: { id: jobId, userId: user.id },
   });
   if (!job)
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
-  if (job.runningSince)
-    return NextResponse.json({ error: "Already running" }, { status: 400 });
 
-  // Close any dangling open entries for this job (belt + suspenders)
-  await prisma.timeEntry.updateMany({
-    where: { userId: user.id, jobId, endedAt: null, startedAt: { not: null } },
-    data: { endedAt: new Date() },
+  await prisma.timeEntry.create({
+    data: { userId: user.id, jobId, manualMinutes: minutes },
   });
-
-  const now = new Date();
-
-  await prisma.$transaction([
-    prisma.job.update({
-      where: { id: jobId },
-      data: { runningSince: now, status: "ACTIVE" },
-    }),
-    prisma.timeEntry.create({
-      data: { userId: user.id, jobId, startedAt: now },
-    }),
-  ]);
 
   return NextResponse.json({ ok: true });
 }
