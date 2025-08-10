@@ -1,8 +1,5 @@
 // lib/timer-utils.ts
-// import { JobStatus } from "@prisma/client";
-
-// Temporary type definition until Prisma client is regenerated
-type JobStatus = "ACTIVE" | "PAUSED" | "DONE" | "MANUAL";
+import { JobStatus } from "./types";
 
 export function isValidStatusTransition(
   from: JobStatus,

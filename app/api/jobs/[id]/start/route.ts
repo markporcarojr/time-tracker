@@ -21,23 +21,42 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
   if (job.runningSince)
     return NextResponse.json({ error: "Already running" }, { status: 400 });
 
-  // Close any dangling open entries for this job (belt + suspenders)
-  await prisma.timeEntry.updateMany({
-    where: { userId: user.id, jobId, endedAt: null, startedAt: { not: null } },
-    data: { endedAt: new Date() },
-  });
-
   const now = new Date();
 
-  await prisma.$transaction([
-    prisma.job.update({
+  await prisma.$transaction(async (tx: any) => {
+    // Ensure only one ACTIVE session per user
+    await tx.job.updateMany({
+      where: { userId: user.id, status: "ACTIVE", id: { not: jobId } },
+      data: { status: "PAUSED", runningSince: null },
+    });
+    
+    // Close any open time entries for other jobs
+    await tx.timeEntry.updateMany({
+      where: { 
+        userId: user.id, 
+        endedAt: null, 
+        startedAt: { not: null },
+        jobId: { not: jobId }
+      },
+      data: { endedAt: now },
+    });
+
+    // Close any dangling open entries for this job
+    await tx.timeEntry.updateMany({
+      where: { userId: user.id, jobId, endedAt: null, startedAt: { not: null } },
+      data: { endedAt: now },
+    });
+
+    // Start timer for this job
+    await tx.job.update({
       where: { id: jobId },
       data: { runningSince: now, status: "ACTIVE" },
-    }),
-    prisma.timeEntry.create({
+    });
+    
+    await tx.timeEntry.create({
       data: { userId: user.id, jobId, startedAt: now },
-    }),
-  ]);
+    });
+  });
 
   return NextResponse.json({ ok: true });
 }

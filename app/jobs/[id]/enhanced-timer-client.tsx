@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-// import type { JobStatus } from "@prisma/client";
+import { JobStatus } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,6 @@ import {
   Plus,
   Timer as TimerIcon,
 } from "lucide-react";
-
-// Temporary type definition until Prisma client is regenerated
-type JobStatus = "ACTIVE" | "PAUSED" | "DONE" | "MANUAL";
 
 type TimerState = {
   id: number;

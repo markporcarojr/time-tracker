@@ -20,23 +20,33 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
     return NextResponse.json({ error: "Not running" }, { status: 400 });
 
   const now = new Date();
-  const minutes = Math.max(
+  const duration = Math.max(
     0,
     Math.floor((now.getTime() - new Date(job.runningSince).getTime()) / 60000)
   );
 
-  await prisma.$transaction([
-    prisma.job.update({ where: { id: jobId }, data: { runningSince: null } }),
-    prisma.timeEntry.updateMany({
+  await prisma.$transaction(async (tx: any) => {
+    // Update job status and clear running timer
+    await tx.job.update({ 
+      where: { id: jobId }, 
+      data: { 
+        runningSince: null, 
+        status: "PAUSED",
+        totalMilliseconds: { increment: duration * 60000 }
+      } 
+    });
+    
+    // Close open time entries
+    await tx.timeEntry.updateMany({
       where: {
         userId: user.id,
         jobId,
         endedAt: null,
         startedAt: { not: null },
       },
-      data: { endedAt: now, duration: minutes },
-    }),
-  ]);
+      data: { endedAt: now, duration },
+    });
+  });
 
-  return NextResponse.json({ ok: true, minutes });
+  return NextResponse.json({ ok: true, minutes: duration });
 }

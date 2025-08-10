@@ -25,21 +25,26 @@ export async function POST(
   const now = new Date();
   const start = new Date(now.getTime() - ms);
 
-  await prisma.$transaction([
-    prisma.job.update({
+  await prisma.$transaction(async (tx: any) => {
+    await tx.job.update({
       where: { id: jobId },
-      data: { totalMilliseconds: { increment: ms } },
-    }),
-    prisma.timeEntry.create({
+      data: { 
+        totalMilliseconds: { increment: ms },
+        status: "MANUAL"
+      },
+    });
+    
+    await tx.timeEntry.create({
       data: {
         userId: user.id,
         jobId,
         startedAt: start,
         endedAt: now,
         manualMinutes: mins,
+        duration: mins,
       },
-    }),
-  ]);
+    });
+  });
 
   return NextResponse.json({ ok: true });
 }

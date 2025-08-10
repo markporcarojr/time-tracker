@@ -1,11 +1,8 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-// import { JobStatus } from "@prisma/client";
+import { JobStatus } from "@/lib/types";
 import { isValidStatusTransition, shouldCloseRunningTimer, shouldStartTimer } from "@/lib/timer-utils";
-
-// Temporary type definition until Prisma client is regenerated
-type JobStatus = "ACTIVE" | "PAUSED" | "DONE" | "MANUAL";
 
 export async function GET(
   req: Request,
