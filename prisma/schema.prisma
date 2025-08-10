@@ -58,4 +58,5 @@ enum JobStatus {
   ACTIVE
   DONE
   PAUSED
+  MANUAL
 }

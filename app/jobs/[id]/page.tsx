@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import TimerPageClient from "./TimerPageClient";
+import EnhancedTimerClient from "./enhanced-timer-client";
 
 export default async function JobPage({ params }: { params: { id: string } }) {
   const { userId } = await auth();
@@ -11,25 +11,34 @@ export default async function JobPage({ params }: { params: { id: string } }) {
 
   const job = await prisma.job.findFirst({
     where: { id: Number(params.id), userId: user.id },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      status: true,
-      totalMilliseconds: true,
+    include: {
+      timeEntries: {
+        where: { endedAt: null, startedAt: { not: null } },
+        orderBy: { startedAt: "desc" },
+        take: 1,
+      },
     },
   });
 
   if (!job) return <div>Job not found</div>;
 
+  // Prepare initial timer state
+  const initialState = {
+    id: job.id,
+    name: job.name,
+    description: job.description,
+    status: job.status,
+    totalMilliseconds: job.totalMilliseconds,
+    runningSince: job.runningSince?.toISOString() || null,
+    isRunning: job.status === "ACTIVE" && !!job.runningSince,
+    activeTimeEntry: job.timeEntries[0] || null,
+  };
+
   return (
     <div className="mx-auto max-w-3xl p-6">
-      <TimerPageClient
+      <EnhancedTimerClient
         jobId={job.id}
-        name={job.name}
-        description={job.description ?? ""}
-        savedTotalMs={job.totalMilliseconds ?? 0}
-        initialStatus={job.status as "ACTIVE" | "PAUSED" | "DONE"}
+        initialState={initialState}
       />
     </div>
   );
