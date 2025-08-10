@@ -7,16 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import {
-  Play,
-  Pause,
-  Square,
-  RotateCcw,
-  Save,
-  Timer as TimerIcon,
-} from "lucide-react";
+import { Play, Pause, Save, Timer as TimerIcon } from "lucide-react";
 
 type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
+
+type TimerSession = {
+  seconds: number;
+  running: boolean;
+  status: JobStatus;
+  startedAt: number | null;
+  baseAtStart: number;
+  saved: boolean;
+  sessionId: string;
+};
 
 type Props = {
   jobId: number;
@@ -33,6 +36,10 @@ function fmtHMS(totalSeconds: number) {
   return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
+function generateSessionId() {
+  return Math.random().toString(36).substring(2) + Date.now();
+}
+
 export default function TimerPageClient({
   jobId,
   name,
@@ -43,28 +50,74 @@ export default function TimerPageClient({
   const router = useRouter();
   const storageKey = useMemo(() => `jobTimer:${jobId}`, [jobId]);
 
+  // Main state
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<JobStatus>(initialStatus);
+  const [sessionId, setSessionId] = useState<string>(generateSessionId());
+  const [saved, setSaved] = useState<boolean>(false);
+
+  // Timer control refs
   const startedAtRef = useRef<number | null>(null);
   const baseAtStartRef = useRef<number>(0);
+  const tickIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // hydrate from localStorage
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const data = JSON.parse(raw);
+  // Hydrate from localStorage
+  const hydrateFromStorage = () => {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      const data: TimerSession = JSON.parse(raw);
+      setRunning(Boolean(data.running));
+      setStatus((data.status as JobStatus) ?? initialStatus);
+      startedAtRef.current = data.startedAt ?? null;
+      baseAtStartRef.current = data.baseAtStart ?? 0;
+      setSessionId(data.sessionId ?? generateSessionId());
+      setSaved(Boolean(data.saved));
+      if (data.running && data.startedAt) {
+        const now = Date.now();
+        const elapsed = Math.floor((now - data.startedAt) / 1000);
+        setSeconds((data.baseAtStart ?? 0) + elapsed);
+      } else {
         setSeconds(data.seconds ?? 0);
-        setRunning(Boolean(data.running));
-        setStatus((data.status as JobStatus) ?? initialStatus);
-        startedAtRef.current = data.startedAt ?? null;
-        baseAtStartRef.current = data.seconds ?? 0;
       }
-    } catch {}
-  }, [storageKey, initialStatus]);
+    } else {
+      // If nothing in storage, reset to initial
+      setSeconds(0);
+      setRunning(false);
+      setStatus(initialStatus);
+      startedAtRef.current = null;
+      baseAtStartRef.current = 0;
+      setSessionId(generateSessionId());
+      setSaved(false);
+    }
+  };
 
-  // persist
+  // Hydrate on mount and on visibilitychange
+  useEffect(() => {
+    hydrateFromStorage();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        hydrateFromStorage();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // Sync across windows/tabs
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === storageKey) {
+        hydrateFromStorage();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("storage", onStorage);
+    };
+    // eslint-disable-next-line
+  }, []);
+
+  // Persist every change to localStorage
   useEffect(() => {
     localStorage.setItem(
       storageKey,
@@ -73,18 +126,26 @@ export default function TimerPageClient({
         running,
         status,
         startedAt: startedAtRef.current,
+        baseAtStart: baseAtStartRef.current,
+        saved,
+        sessionId,
       })
     );
-  }, [seconds, running, status, storageKey]);
+  }, [seconds, running, status, saved, sessionId, storageKey]);
 
-  // tick
+  // Timer ticking effect
   useEffect(() => {
-    if (!running) return;
+    if (!running) {
+      if (tickIntervalRef.current) {
+        clearInterval(tickIntervalRef.current);
+        tickIntervalRef.current = null;
+      }
+      return;
+    }
     if (!startedAtRef.current) {
       startedAtRef.current = Date.now();
       baseAtStartRef.current = seconds;
     }
-
     const tick = () => {
       const elapsed = Math.floor(
         (Date.now() - (startedAtRef.current as number)) / 1000
@@ -92,18 +153,29 @@ export default function TimerPageClient({
       setSeconds(baseAtStartRef.current + elapsed);
     };
     tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [running, seconds]);
+    tickIntervalRef.current = setInterval(tick, 1000);
+    return () => {
+      if (tickIntervalRef.current) {
+        clearInterval(tickIntervalRef.current);
+        tickIntervalRef.current = null;
+      }
+    };
+    // Only depend on running!
+    // eslint-disable-next-line
+  }, [running]);
 
+  // Start timer (new session, clear saved)
   const startLocal = () => {
     if (running) return;
     startedAtRef.current = Date.now();
     baseAtStartRef.current = seconds;
+    setSessionId(generateSessionId());
+    setSaved(false);
     setRunning(true);
     setStatus("ACTIVE");
   };
 
+  // Pause timer
   const pauseLocal = () => {
     if (!running) return;
     const now = Date.now();
@@ -115,37 +187,36 @@ export default function TimerPageClient({
     setStatus("PAUSED");
   };
 
-  const stopLocal = () => {
-    pauseLocal();
-    setStatus("DONE");
-  };
-
-  const resetLocal = () => {
-    startedAtRef.current = null;
-    baseAtStartRef.current = 0;
-    setRunning(false);
-    setSeconds(0);
-    setStatus("PAUSED");
-  };
-
+  // Save session (only once per session)
   const saveSession = async () => {
-    // freeze current session
+    if (saved) {
+      alert("This session has already been saved.");
+      return;
+    }
     pauseLocal();
-
     const res = await fetch(`/api/jobs/${jobId}/session`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seconds, status }),
+      body: JSON.stringify({ seconds, status, sessionId }),
     });
-
     if (!res.ok) {
       alert("Failed to save session");
       return;
     }
-
-    // clear local session
-    localStorage.removeItem(storageKey);
-    setSeconds(0); // new clean session
+    setSaved(true);
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        seconds,
+        running,
+        status,
+        startedAt: startedAtRef.current,
+        baseAtStart: baseAtStartRef.current,
+        saved: true,
+        sessionId,
+      })
+    );
+    setSeconds(0);
     router.refresh();
   };
 
@@ -163,8 +234,6 @@ export default function TimerPageClient({
             <p className="text-sm text-muted-foreground mt-1">{description}</p>
           ) : null}
         </div>
-
-        {/* Status pills */}
         <div className="flex gap-1.5">
           {(["ACTIVE", "PAUSED", "DONE"] as JobStatus[]).map((s) => (
             <Badge
@@ -183,11 +252,8 @@ export default function TimerPageClient({
           ))}
         </div>
       </CardHeader>
-
       <Separator />
-
       <CardContent className="py-8">
-        {/* Big timer */}
         <div className="text-center">
           <div className="text-[64px] leading-none font-mono tracking-tight">
             {fmtHMS(status === "DONE" ? 0 : seconds)}
@@ -196,8 +262,6 @@ export default function TimerPageClient({
             Saved total: <strong>{fmtHMS(savedSeconds)}</strong>
           </div>
         </div>
-
-        {/* Actions */}
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           {!running ? (
             <Button
@@ -216,21 +280,22 @@ export default function TimerPageClient({
               Pause
             </Button>
           )}
-          <Button onClick={stopLocal} className="bg-red-600 hover:bg-red-700">
-            <Square className="mr-2 h-4 w-4" />
-            Stop
-          </Button>
-          <Button variant="secondary" onClick={resetLocal}>
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Reset
-          </Button>
           <Button
             onClick={saveSession}
             className="bg-blue-600 hover:bg-blue-700"
+            disabled={saved}
           >
             <Save className="mr-2 h-4 w-4" />
-            Save Session
+            {saved ? "Already Saved" : "Save Session"}
           </Button>
+        </div>
+        <div className="mt-2 text-sm text-muted-foreground text-center">
+          Timer persists as you move between pages, reload, or return, until
+          paused or saved.
+          <br />
+          <span className="text-red-500 font-bold">Note:</span> Saving in one
+          window marks the session as saved everywhere. Start a new session to
+          track new time.
         </div>
       </CardContent>
     </Card>
