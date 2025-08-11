@@ -145,3 +145,44 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Custom shadow utilities for industrial look */
+  .shadow-hard {
+    box-shadow: 4px 4px 0px 0px var(--color-border);
+  }
+  
+  .shadow-plate {
+    box-shadow: 2px 2px 0px 0px var(--color-border);
+  }
+  
+  /* Hard corners for industrial aesthetic */
+  .rounded-hard {
+    border-radius: 2px;
+  }
+  
+  /* Additional visual utilities */
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  
+  /* Enhanced transitions for smooth interactions */
+  .transition-shadow {
+    transition: box-shadow 0.2s ease-in-out;
+  }
+  
+  .transition-all {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .transition-colors {
+    transition: color 0.2s ease-in-out;
+  }
+  
+  .transition-opacity {
+    transition: opacity 0.2s ease-in-out;
+  }
+}

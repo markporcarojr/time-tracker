@@ -1,7 +1,4 @@
-import prisma from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
-import { addDays, startOfDay, startOfMonth } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -40,99 +37,45 @@ function fmtHMS(totalSeconds: number) {
   return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
-async function getTimeSummary(userDbId: number) {
-  // Date ranges
-  const now = new Date();
-  const weekStart = startOfDay(addDays(now, -6)); // last 7 days including today
-  const monthStart = startOfMonth(now);
+// Mock data for demo
+const mockJobs = [
+  {
+    id: 1,
+    name: "Website Redesign",
+    description: "Complete redesign of the company website with modern UI/UX principles",
+    status: "ACTIVE" as JobStatus,
+    totalMilliseconds: 14400000, // 4 hours
+  },
+  {
+    id: 2,
+    name: "Mobile App Development",
+    description: "Building the mobile version of our time tracking application",
+    status: "ACTIVE" as JobStatus,
+    totalMilliseconds: 28800000, // 8 hours
+  },
+  {
+    id: 3,
+    name: "Database Migration",
+    description: "Migrating legacy database to new infrastructure",
+    status: "PAUSED" as JobStatus,
+    totalMilliseconds: 7200000, // 2 hours
+  },
+];
 
-  // Pull entries for week & month once each; compute minutes server-side
-  const [weekEntries, monthEntries] = await Promise.all([
-    prisma.timeEntry.findMany({
-      where: {
-        userId: userDbId,
-        OR: [
-          { startedAt: { gte: weekStart } },
-          { endedAt: { gte: weekStart } },
-        ],
-      },
-      select: { startedAt: true, endedAt: true, manualMinutes: true },
-    }),
-    prisma.timeEntry.findMany({
-      where: {
-        userId: userDbId,
-        OR: [
-          { startedAt: { gte: monthStart } },
-          { endedAt: { gte: monthStart } },
-        ],
-      },
-      select: { startedAt: true, endedAt: true, manualMinutes: true },
-    }),
-  ]);
-
-  const minutesFromEntry = (e: {
-    startedAt: Date;
-    endedAt: Date | null;
-    manualMinutes: number | null;
-  }) => {
-    if (e.manualMinutes && e.manualMinutes > 0) return e.manualMinutes;
-    if (e.startedAt && e.endedAt) {
-      const ms = e.endedAt.getTime() - e.startedAt.getTime();
-      return Math.max(0, Math.floor(ms / 60000));
-    }
-    return 0;
-  };
-
-  const weekMin = weekEntries.reduce((sum, e) => sum + minutesFromEntry(e), 0);
-  const monthMin = monthEntries.reduce(
-    (sum, e) => sum + minutesFromEntry(e),
-    0
-  );
-
-  return {
-    weekMinutes: weekMin,
-    monthMinutes: monthMin,
-  };
-}
-
-export default async function DashboardPage() {
-  const { userId } = await auth();
-  if (!userId) return <div className="p-6">Unauthorized</div>;
-
-  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return <div className="p-6">No user</div>;
-
-  const [jobs, summary] = await Promise.all([
-    prisma.job.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        status: true,
-        totalMilliseconds: true,
-      },
-    }),
-    getTimeSummary(user.id),
-  ]);
-
+export default function DemoPage() {
+  const jobs = mockJobs;
   const activeJobs = jobs.filter((j) => j.status === "ACTIVE");
-  const weekSeconds = summary.weekMinutes * 60;
-  const monthSeconds = summary.monthMinutes * 60;
-
-  // Fake targets for progress (tweak as you like)
+  
+  // Mock time summary
+  const weekSeconds = 32 * 3600; // 32 hours this week
+  const monthSeconds = 124 * 3600; // 124 hours this month
+  
+  // Targets
   const weekTargetSec = 40 * 3600; // 40h/week target
   const monthTargetSec = 160 * 3600; // 160h/month target
-
-  const weekPct = Math.min(
-    100,
-    Math.round((weekSeconds / weekTargetSec) * 100)
-  );
-  const monthPct = Math.min(
-    100,
-    Math.round((monthSeconds / monthTargetSec) * 100)
-  );
+  
+  const weekPct = Math.min(100, Math.round((weekSeconds / weekTargetSec) * 100));
+  const monthPct = Math.min(100, Math.round((monthSeconds / monthTargetSec) * 100));
 
   return (
     <div className="mx-auto max-w-7xl p-6 space-y-8">
