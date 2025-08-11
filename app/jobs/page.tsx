@@ -1,8 +1,7 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import JobListClient from "./job-list-client";
 
 export default async function JobListPage() {
   const { userId } = await auth();
@@ -19,7 +18,6 @@ export default async function JobListPage() {
       name: true,
       description: true,
       status: true,
-      totalMilliseconds: true,
     },
   });
 
@@ -35,33 +33,7 @@ export default async function JobListPage() {
         </Link>
       </div>
 
-      <Card className="shadow-plate border-border">
-        <CardHeader>
-          <CardTitle>All jobs</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {jobs.map((job) => (
-              <li key={job.id}>
-                <Link
-                  href={`/jobs/${job.id}`}
-                  className="block rounded-hard border border-border bg-card p-4 shadow-hard hover:opacity-95"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium">{job.name}</div>
-                    <Badge variant="secondary">{job.status}</Badge>
-                  </div>
-                  {job.description ? (
-                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                      {job.description}
-                    </p>
-                  ) : null}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+      <JobListClient initialJobs={jobs} />
     </div>
   );
 }
