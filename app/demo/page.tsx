@@ -17,6 +17,7 @@ import {
 
 type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
 
+// Utility function for future status icon rendering  
 function getStatusIcon(status: JobStatus) {
   switch (status) {
     case "ACTIVE":
