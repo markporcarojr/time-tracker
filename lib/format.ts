@@ -1,5 +1,5 @@
-export function formatMS(milliseconds: number) {
-  const totalSeconds = Math.floor(milliseconds / 1000);
+// lib/format.ts
+export function fmtHMS(totalSeconds: number) {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;

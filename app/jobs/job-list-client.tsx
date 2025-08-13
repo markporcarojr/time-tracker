@@ -36,7 +36,7 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
 
   const handleDeleteJob = async (jobId: number) => {
     setDeletingJobId(jobId);
-    
+
     try {
       const response = await fetch(`/api/jobs/${jobId}`, {
         method: "DELETE",
@@ -44,7 +44,7 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
 
       if (response.ok) {
         // Remove the job from the list
-        setJobs(jobs.filter(job => job.id !== jobId));
+        setJobs(jobs.filter((job) => job.id !== jobId));
       } else {
         console.error("Failed to delete job");
         // You could add a toast notification here
@@ -93,7 +93,7 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
                     </p>
                   ) : null}
                 </Link>
-                
+
                 {/* Delete button */}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -114,7 +114,9 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Job</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete &quot;{job.name}&quot;? This action cannot be undone and will also delete all associated time sessions.
+                        Are you sure you want to delete &quot;{job.name}&quot;?
+                        This action cannot be undone and will also delete all
+                        associated time sessions.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

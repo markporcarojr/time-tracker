@@ -2,55 +2,35 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+export async function POST(_: Request, { params }: { params: { id: string } }) {
+  const { userId } = await auth();
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const user = await prisma.user.findUnique({ where: { clerkId: userId } });
-    if (!user) {
-      return new NextResponse("User not found", { status: 404 });
-    }
+  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+  if (!user) return NextResponse.json({ error: "No user" }, { status: 404 });
 
-    const jobId = parseInt(params.id);
+  const jobId = Number(params.id);
+  const job = await prisma.job.findFirst({
+    where: { id: jobId, userId: user.id },
+  });
+  if (!job)
+    return NextResponse.json({ error: "Job not found" }, { status: 404 });
 
-    if (isNaN(jobId)) {
-      return new NextResponse("Invalid job ID", { status: 400 });
-    }
+  if (!job.startedAt) return NextResponse.json({ ok: true }); // already stopped
 
-    // Check if the job exists and belongs to the user
-    const existingJob = await prisma.job.findFirst({
-      where: {
-        id: jobId,
-        userId: user.id,
-      },
-    });
+  const now = new Date();
+  const ms = Math.max(0, now.getTime() - job.startedAt.getTime());
 
-    if (!existingJob) {
-      return new NextResponse("Job not found or not authorized", { status: 404 });
-    }
+  await prisma.job.update({
+    where: { id: jobId },
+    data: {
+      totalMs: { increment: ms },
+      startedAt: null,
+      stoppedAt: now,
+      status: "PAUSED",
+    },
+  });
 
-    // Delete related time entries first, then delete the job
-    await prisma.timeEntry.deleteMany({
-      where: {
-        jobId: jobId,
-      },
-    });
-
-    await prisma.job.delete({
-      where: {
-        id: jobId,
-      },
-    });
-
-    return new NextResponse(null, { status: 204 });
-  } catch (error) {
-    console.error("Error deleting job:", error);
-    return new NextResponse("Internal server error", { status: 500 });
-  }
+  return NextResponse.json({ ok: true, addedMs: ms });
 }

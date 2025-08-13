@@ -1,77 +1,44 @@
+// app/page.tsx
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { addDays, startOfDay, startOfMonth } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { JobsOverviewCard } from "@/components/dashboard/JobsOverviewCard";
+import { ActiveJobsList } from "@/components/dashboard/ActiveJobsList";
+import { fmtHMS } from "@/lib/format";
 
 type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
 
-function fmtHMS(totalSeconds: number) {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
-}
-
-async function getTimeSummary(userDbId: number) {
-  // Date ranges
+const getTimeSummary = async (userId: number) => {
   const now = new Date();
-  const weekStart = startOfDay(addDays(now, -6)); // last 7 days including today
+  const weekStart = startOfDay(addDays(now, -7));
   const monthStart = startOfMonth(now);
 
-  // Pull entries for week & month once each; compute minutes server-side
-  const [weekEntries, monthEntries] = await Promise.all([
-    prisma.timeEntry.findMany({
-      where: {
-        userId: userDbId,
-        OR: [
-          { startedAt: { gte: weekStart } },
-          { endedAt: { gte: weekStart } },
-        ],
-      },
-      select: { startedAt: true, endedAt: true, manualMinutes: true },
-    }),
-    prisma.timeEntry.findMany({
-      where: {
-        userId: userDbId,
-        OR: [
-          { startedAt: { gte: monthStart } },
-          { endedAt: { gte: monthStart } },
-        ],
-      },
-      select: { startedAt: true, endedAt: true, manualMinutes: true },
-    }),
-  ]);
+  const weekResult = (await prisma.job.aggregate({
+    where: {
+      userId,
+      status: "DONE",
+      stoppedAt: { gte: weekStart },
+    },
+    _sum: { totalMs: true },
+  })) || { _sum: { totalMs: 0 } };
 
-  const minutesFromEntry = (e: {
-    startedAt: Date;
-    endedAt: Date | null;
-    manualMinutes: number | null;
-  }) => {
-    if (e.manualMinutes && e.manualMinutes > 0) return e.manualMinutes;
-    if (e.startedAt && e.endedAt) {
-      const ms = e.endedAt.getTime() - e.startedAt.getTime();
-      return Math.max(0, Math.floor(ms / 60000));
-    }
-    return 0;
-  };
-
-  const weekMin = weekEntries.reduce((sum, e) => sum + minutesFromEntry(e), 0);
-  const monthMin = monthEntries.reduce(
-    (sum, e) => sum + minutesFromEntry(e),
-    0
-  );
+  const monthResult = (await prisma.job.aggregate({
+    where: {
+      userId,
+      status: "DONE",
+      stoppedAt: { gte: monthStart },
+    },
+    _sum: { totalMs: true },
+  })) || { _sum: { totalMs: 0 } };
 
   return {
-    weekMinutes: weekMin,
-    monthMinutes: monthMin,
+    weekMinutes: Math.floor((weekResult._sum.totalMs || 0) / 60000),
+    monthMinutes: Math.floor((monthResult._sum.totalMs || 0) / 60000),
   };
-}
-
+};
 export default async function DashboardPage() {
   const { userId } = await auth();
   if (!userId) return <div className="p-6">Unauthorized</div>;
@@ -82,13 +49,13 @@ export default async function DashboardPage() {
   const [jobs, summary] = await Promise.all([
     prisma.job.findMany({
       where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
+      orderBy: { startedAt: "desc" },
       select: {
         id: true,
         name: true,
         description: true,
         status: true,
-        totalMilliseconds: true,
+        totalMs: true,
       },
     }),
     getTimeSummary(user.id),
@@ -98,9 +65,8 @@ export default async function DashboardPage() {
   const weekSeconds = summary.weekMinutes * 60;
   const monthSeconds = summary.monthMinutes * 60;
 
-  // Fake targets for progress (tweak as you like)
-  const weekTargetSec = 40 * 3600; // 40h/week target
-  const monthTargetSec = 160 * 3600; // 160h/month target
+  const weekTargetSec = 40 * 3600;
+  const monthTargetSec = 160 * 3600;
 
   const weekPct = Math.min(
     100,
@@ -123,104 +89,39 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {/* Top row: Summary cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <Card className="shadow-plate border-border">
-          <CardHeader>
-            <CardTitle>Total this week</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-2xl font-mono">{fmtHMS(weekSeconds)}</div>
-            <Progress value={weekPct} />
-            <div className="text-xs text-muted-foreground">
-              {weekPct}% of 40h target
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-plate border-border">
-          <CardHeader>
-            <CardTitle>Total this month</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-2xl font-mono">{fmtHMS(monthSeconds)}</div>
-            <Progress value={monthPct} />
-            <div className="text-xs text-muted-foreground">
-              {monthPct}% of 160h target
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-plate border-border">
-          <CardHeader>
-            <CardTitle>Jobs overview</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center gap-3">
-            <Badge variant="secondary" className="text-xs">
-              All: {jobs.length}
-            </Badge>
-            <Badge className="bg-primary text-primary-foreground text-xs">
-              Active: {activeJobs.length}
-            </Badge>
-            <Badge variant="secondary" className="text-xs">
-              Done: {jobs.filter((j) => j.status === "DONE").length}
-            </Badge>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total this week"
+          value={fmtHMS(weekSeconds)}
+          progressPct={weekPct}
+          hint={`${weekPct}% of 40h target`}
+        />
+        <StatCard
+          title="Total this month"
+          value={fmtHMS(monthSeconds)}
+          progressPct={monthPct}
+          hint={`${monthPct}% of 160h target`}
+        />
+        <JobsOverviewCard
+          totals={{
+            all: jobs.length,
+            active: activeJobs.length,
+            done: jobs.filter((j) => j.status === "DONE").length,
+          }}
+        />
       </div>
 
       <Separator />
-
-      {/* Active jobs list (clickable) */}
-      <Card className="shadow-plate border-border">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Active jobs</CardTitle>
-          <Link href="/jobs" className="text-sm underline hover:opacity-80">
-            View all jobs
-          </Link>
-        </CardHeader>
-        <CardContent>
-          {activeJobs.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
-              No active jobs yet.
-            </div>
-          ) : (
-            <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {activeJobs.map((job) => {
-                const savedSec = Math.floor(
-                  (job.totalMilliseconds ?? 0) / 1000
-                );
-                return (
-                  <li key={job.id}>
-                    <Link
-                      href={`/jobs/${job.id}`}
-                      className={cn(
-                        "block rounded-hard border border-border bg-card p-4 shadow-hard hover:opacity-95"
-                      )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium">{job.name}</div>
-                        <Badge className="bg-primary text-primary-foreground">
-                          {job.status}
-                        </Badge>
-                      </div>
-                      {job.description ? (
-                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                          {job.description}
-                        </p>
-                      ) : null}
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        Saved time:{" "}
-                        <span className="font-mono">{fmtHMS(savedSec)}</span>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <ActiveJobsList
+        jobs={
+          activeJobs.length > 0
+            ? activeJobs.map((j) => ({
+                ...j,
+                totalMilliseconds: j.totalMs,
+              }))
+            : []
+        }
+      />
     </div>
   );
 }

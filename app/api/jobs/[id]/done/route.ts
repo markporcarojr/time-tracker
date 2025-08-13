@@ -17,12 +17,21 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
   if (!job)
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
 
-  if (job.startedAt) return NextResponse.json({ ok: true }); // already running
-
-  await prisma.job.update({
-    where: { id: jobId },
-    data: { startedAt: new Date(), status: "ACTIVE" },
-  });
+  if (job.startedAt) {
+    const now = new Date();
+    const ms = Math.max(0, now.getTime() - job.startedAt.getTime());
+    await prisma.job.update({
+      where: { id: jobId },
+      data: {
+        totalMs: { increment: ms },
+        startedAt: null,
+        stoppedAt: now,
+        status: "DONE",
+      },
+    });
+  } else {
+    await prisma.job.update({ where: { id: jobId }, data: { status: "DONE" } });
+  }
 
   return NextResponse.json({ ok: true });
 }
