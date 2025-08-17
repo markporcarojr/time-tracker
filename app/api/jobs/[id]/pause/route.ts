@@ -1,4 +1,4 @@
-// app/api/jobs/[id]/start/route.ts
+// app/api/jobs/[id]/pause/route.ts
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
@@ -19,15 +19,26 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
   if (!job)
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
 
-  if (job.startedAt) {
-    return NextResponse.json({ ok: true, message: "Already running" }); // idempotent
+  if (!job.startedAt) {
+    return NextResponse.json({ ok: true, message: "Already paused" }); // idempotent
   }
 
   const now = new Date();
-  await prisma.job.update({
+  const delta = Math.max(0, now.getTime() - new Date(job.startedAt).getTime());
+
+  const updated = await prisma.job.update({
     where: { id: jobId },
-    data: { startedAt: now, status: "ACTIVE" },
+    data: {
+      startedAt: null,
+      stoppedAt: now,
+      totalMs: job.totalMs + delta,
+      status: "PAUSED",
+    },
   });
 
-  return NextResponse.json({ ok: true, startedAt: now.toISOString() });
+  return NextResponse.json({
+    ok: true,
+    totalMs: updated.totalMs,
+    stoppedAt: now.toISOString(),
+  });
 }

@@ -1,9 +1,13 @@
-// app/jobs/[id]/page.tsx
+// app/jobs/[id]/edit/page.tsx
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import TimerClient from "./TimerClient";
+import EditJobForm from "./EditJobForm";
 
-export default async function JobPage({ params }: { params: { id: string } }) {
+export default async function EditJobPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const { userId } = await auth();
   if (!userId) return <div className="p-6">Unauthorized</div>;
 
@@ -17,24 +21,16 @@ export default async function JobPage({ params }: { params: { id: string } }) {
       id: true,
       name: true,
       description: true,
+      status: true,
       totalMs: true,
       startedAt: true,
-      status: true,
     },
   });
-
   if (!job) return <div className="p-6">Job not found</div>;
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <TimerClient
-        jobId={job.id}
-        name={job.name}
-        description={job.description}
-        totalMs={job.totalMs}
-        startedAtISO={job.startedAt ? job.startedAt.toISOString() : null}
-        status={job.status as any}
-      />
+    <div className="mx-auto max-w-2xl p-6 space-y-6">
+      <EditJobForm job={job} />
     </div>
   );
 }

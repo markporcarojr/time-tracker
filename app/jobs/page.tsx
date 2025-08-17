@@ -18,6 +18,7 @@ export default async function JobListPage() {
       name: true,
       description: true,
       status: true,
+      totalMs: true,
     },
   });
 
