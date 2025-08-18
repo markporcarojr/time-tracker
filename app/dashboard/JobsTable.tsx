@@ -94,8 +94,6 @@ import {
   IconEdit,
 } from "@tabler/icons-react";
 
-/* ---------------- types ---------------- */
-
 type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
 
 export const jobSchema = z.object({
@@ -103,8 +101,8 @@ export const jobSchema = z.object({
   name: z.string(),
   description: z.string().nullable(),
   status: z.enum(["ACTIVE", "PAUSED", "DONE"]),
-  startedAt: z.string().datetime().nullable(),
-  stoppedAt: z.string().datetime().nullable(),
+  startedAt: z.iso.datetime().nullable(), // serialize Dates to ISO strings when passing from server
+  stoppedAt: z.iso.datetime().nullable(),
   totalMs: z.number(),
   userId: z.number(),
 });
@@ -381,15 +379,16 @@ const columns: ColumnDef<JobRow>[] = [
   {
     accessorKey: "name",
     header: "Job",
-    cell: ({ row, table }) => {
+    cell: ({ row }) => {
       const job = row.original;
       return (
         <div className="flex flex-col">
           <JobDrawer
             job={job}
             onPatched={(next) => {
-              // Preferred: immutable optimistic update via meta helper
-              table.options.meta?.patchRow?.(row.id, next);
+              // optimistic row update
+              Object.assign(job, next);
+              row._getTable().options.meta?.invalidate?.();
             }}
           />
           {job.description ? (
@@ -429,13 +428,15 @@ const columns: ColumnDef<JobRow>[] = [
     id: "total",
     header: () => <div className="w-full text-right">Total</div>,
     cell: ({ row }) => {
-      const [_, setNowTick] = React.useState(0);
+      const [nowTick, setNowTick] = React.useState(0);
       const job = row.original;
 
+      // live tick if active
       React.useEffect(() => {
         if (job.status !== "ACTIVE" || !job.startedAt) return;
         const id = setInterval(() => setNowTick((n) => n + 1), 1000);
         return () => clearInterval(id);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
       }, [job.status, job.startedAt]);
 
       const total = fmtHMSfromMs(liveTotalMs(job));
@@ -444,7 +445,7 @@ const columns: ColumnDef<JobRow>[] = [
   },
   {
     id: "actions",
-    cell: ({ row, table }) => {
+    cell: ({ row }) => {
       const job = row.original;
       return (
         <DropdownMenu>
@@ -474,11 +475,8 @@ const columns: ColumnDef<JobRow>[] = [
                 const res = await fetch(`/api/jobs/${job.id}`, {
                   method: "DELETE",
                 });
-                if (!res.ok) {
-                  alert("Failed to delete");
-                  return;
-                }
-                table.options.meta?.removeRow?.(job.id);
+                if (!res.ok) alert("Failed to delete");
+                row._getTable().options.meta?.removeRow?.(job.id);
               }}
             >
               Delete
@@ -566,16 +564,10 @@ export function JobsTable({ data: initialData }: { data: JobRow[] }) {
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     meta: {
-      removeRow: (id: number | string) =>
-        setData((prev) => prev.filter((r) => String(r.id) !== String(id))),
+      removeRow: (id: number) =>
+        setData((prev) => prev.filter((r) => r.id !== id)),
       invalidate: () => setData((prev) => [...prev]),
-      patchRow: (rowId, patch) =>
-        setData((prev) =>
-          prev.map((r) =>
-            String(r.id) === String(rowId) ? { ...r, ...patch } : r
-          )
-        ),
-    },
+    } as any,
   });
 
   function handleDragEnd(event: DragEndEvent) {

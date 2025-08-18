@@ -10,9 +10,10 @@ export default async function JobPage({ params }: { params: { id: string } }) {
   const user = await prisma.user.findUnique({ where: { clerkId: userId } });
   if (!user) return <div className="p-6">No user</div>;
 
-  const id = Number(params.id);
+  const { id } = await params;
+  const jobId = Number(id);
   const job = await prisma.job.findFirst({
-    where: { id, userId: user.id },
+    where: { id: jobId, userId: user.id },
     select: {
       id: true,
       name: true,
