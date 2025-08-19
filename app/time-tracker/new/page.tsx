@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function NewSession() {
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -22,21 +24,33 @@ export default function NewSession() {
   }, []);
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-semibold mb-4">Tracking Time...</h1>
-      <p className="text-lg mb-6">
-        Session started at: {startTime?.toLocaleTimeString()}
-      </p>
+    <div className="mx-auto max-w-xl p-6">
+      <Card className="shadow-plate border-border">
+        <CardHeader>
+          <CardTitle>⏱️ Tracking Time...</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="text-center">
+            <p className="text-lg font-medium">Session Started</p>
+            <p className="text-sm text-muted-foreground">
+              {startTime?.toLocaleTimeString()}
+            </p>
+          </div>
 
-      <button
-        onClick={async () => {
-          await fetch("/api/time/stop", { method: "PATCH" });
-          router.push("/time-tracker");
-        }}
-        className="bg-red-600 text-white px-4 py-2 rounded"
-      >
-        Stop Session
-      </button>
+          <div className="flex justify-center">
+            <Button
+              onClick={async () => {
+                await fetch("/api/time/stop", { method: "PATCH" });
+                router.push("/time-tracker");
+              }}
+              variant="destructive"
+              size="lg"
+            >
+              Stop Session
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
