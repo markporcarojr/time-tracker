@@ -45,7 +45,7 @@ export default async function TimeTrackerPage() {
               {sessions.map((s) => (
                 <li 
                   key={s.id} 
-                  className="text-sm border border-border bg-card p-3 rounded-md shadow-sm"
+                  className="text-sm border border-border bg-card p-3 rounded-hard shadow-hard"
                 >
                   <div className="font-medium">
                     {s.startTime ? new Date(s.startTime).toLocaleString() : "Manual"}{" "}
