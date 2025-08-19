@@ -29,15 +29,16 @@ model User {
 }
 
 model Job {
-  description String?
-  id          Int       @id @default(autoincrement())
-  name        String
-  startedAt   DateTime?
-  status      JobStatus @default(PAUSED)
-  stoppedAt   DateTime?
-  totalMs     Int       @default(0)
-  user        User      @relation(fields: [userId], references: [id])
-  userId      Int
+  jobNumber    Int?
+  description  String?
+  id           Int       @id @default(autoincrement())
+  customerName String
+  startedAt    DateTime?
+  status       JobStatus @default(PAUSED)
+  stoppedAt    DateTime?
+  totalMs      Int       @default(0)
+  user         User      @relation(fields: [userId], references: [id])
+  userId       Int
 
   @@index([userId])
 }

@@ -21,7 +21,8 @@ import Link from "next/link";
 
 type Job = {
   id: number;
-  name: string;
+  jobNumber: number | null;
+  customerName: string;
   description: string | null;
   status: "ACTIVE" | "PAUSED" | "DONE";
   totalMs: number;
@@ -38,7 +39,8 @@ function fmtHMS(ms: number) {
 
 export default function EditJobForm({ job }: { job: Job }) {
   const router = useRouter();
-  const [name, setName] = useState(job.name);
+  const [customerName, setCustomerName] = useState(job.customerName);
+  const [jobNumber, setJobNumber] = useState(job.jobNumber?.toString() ?? "");
   const [description, setDescription] = useState(job.description ?? "");
   const [status, setStatus] = useState<Job["status"]>(job.status);
   const [addMinutes, setAddMinutes] = useState<number>(0);
@@ -53,6 +55,7 @@ export default function EditJobForm({ job }: { job: Job }) {
       body: JSON.stringify({
         name,
         description: description || null,
+        jobNumber: jobNumber ? Number(jobNumber) : null,
         status,
         addMinutes: addMinutes > 0 ? addMinutes : undefined,
       }),
@@ -86,11 +89,22 @@ export default function EditJobForm({ job }: { job: Job }) {
       <CardContent className="space-y-6 pt-6">
         <div className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">Customer Name</Label>
             <Input
               id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="jobNumber">Job Number</Label>
+            <Input
+              id="jobNumber"
+              type="number"
+              min={0}
+              value={jobNumber}
+              onChange={(e) => setJobNumber(e.target.value)}
+              placeholder="12345"
             />
           </div>
 

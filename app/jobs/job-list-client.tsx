@@ -35,7 +35,7 @@ import { Trash2, Plus, Filter, ArrowUpDown, Search } from "lucide-react";
 
 type Job = {
   id: number;
-  name: string;
+  customerName: string;
   description: string | null;
   totalMs: number;
   status: "ACTIVE" | "DONE" | "PAUSED" | "MANUAL";
@@ -225,8 +225,8 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
                 <SelectContent align="start">
                   <SelectItem value="created:desc">Newest first</SelectItem>
                   <SelectItem value="created:asc">Oldest first</SelectItem>
-                  <SelectItem value="name:asc">Name A–Z</SelectItem>
-                  <SelectItem value="name:desc">Name Z–A</SelectItem>
+                  <SelectItem value="customerName:asc">Name A–Z</SelectItem>
+                  <SelectItem value="customerName:desc">Name Z–A</SelectItem>
                   <SelectItem value="status:asc">Status A–Z</SelectItem>
                   <SelectItem value="status:desc">Status Z–A</SelectItem>
                 </SelectContent>

@@ -31,11 +31,11 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const pathname = usePathname();
 
-  // mark active items based on current path
   const main = navMain.map((item) => ({
     ...item,
     isActive: pathname === item.url || pathname?.startsWith(item.url + "/"),
   }));
+
   const secondary = navSecondary.map((item) => ({
     ...item,
     isActive: pathname === item.url || pathname?.startsWith(item.url + "/"),
@@ -69,7 +69,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       <SidebarFooter>
         <NavUser
           user={{
-            name: user?.name ?? "Signed out",
+            customerName: user?.name ?? "Signed out",
             email: user?.email ?? "",
             avatar: user?.avatar ?? "/avatars/placeholder.png",
           }}

@@ -21,7 +21,7 @@ export function fmtHMS(totalSeconds: number) {
 
 export default function TimerClient(props: {
   jobId: number;
-  name: string;
+  customerName: string;
   description?: string | null;
   totalMs: number;
   startedAtISO: string | null;

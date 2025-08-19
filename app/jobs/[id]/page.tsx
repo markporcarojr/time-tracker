@@ -16,7 +16,7 @@ export default async function JobPage({ params }: { params: { id: string } }) {
     where: { id: jobId, userId: user.id },
     select: {
       id: true,
-      name: true,
+      customerName: true,
       description: true,
       totalMs: true,
       startedAt: true,

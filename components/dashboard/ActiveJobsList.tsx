@@ -7,7 +7,7 @@ import { fmtHMS } from "@/lib/format";
 
 type Job = {
   id: number;
-  name: string;
+  customerName: string;
   description: string | null;
   status: "ACTIVE" | "PAUSED" | "DONE";
   totalMilliseconds: number | null;

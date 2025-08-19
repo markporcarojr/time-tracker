@@ -19,11 +19,12 @@ export default async function EditJobPage({
     where: { id, userId: user.id },
     select: {
       id: true,
-      name: true,
+      customerName: true,
       description: true,
       status: true,
       totalMs: true,
       startedAt: true,
+      jobNumber: true,
     },
   });
   if (!job) return <div className="p-6">Job not found</div>;

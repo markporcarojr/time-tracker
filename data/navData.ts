@@ -1,18 +1,16 @@
 // src/config/nav-data.ts
+import type { Icon as TablerIcon } from "@tabler/icons-react";
 import {
-  IconDashboard,
   IconBriefcase,
-  IconTimeline,
+  IconDashboard,
   IconSettings,
-  IconHelp,
-  IconSearch,
+  IconTimeline,
 } from "@tabler/icons-react";
 
 export type NavLink = {
   title: string;
   url: string;
-  icon?: React.ComponentType<any>;
-  isActive?: boolean; // optional for marking active state
+  icon?: TablerIcon; // <- use Tabler's Icon type
 };
 
 export const navMain: NavLink[] = [
@@ -23,6 +21,4 @@ export const navMain: NavLink[] = [
 
 export const navSecondary: NavLink[] = [
   { title: "Settings", url: "/settings", icon: IconSettings },
-  { title: "Get Help", url: "/help", icon: IconHelp },
-  { title: "Search", url: "/search", icon: IconSearch },
 ];

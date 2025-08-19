@@ -7,15 +7,20 @@ import { Button } from "@/components/ui/button";
 
 export default function NewJobPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [description, setDescription] = useState("");
+  const [jobNumber, setJobNumber] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const res = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, description }),
+      body: JSON.stringify({
+        customerName,
+        description,
+        jobNumber: jobNumber ? Number(jobNumber) : null,
+      }),
     });
 
     if (!res.ok) {
@@ -35,12 +40,22 @@ export default function NewJobPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm">Job name</label>
+              <label className="text-sm">Customer Name</label>
               <input
                 className="mt-1 w-full rounded-hard border border-border bg-background p-2"
-                placeholder="e.g. CNC Part #A12"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                placeholder="Bristol Man., Merssino, etc... "
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm">Job #</label>
+              <input
+                className="mt-1 w-full rounded-hard border border-border bg-background p-2"
+                placeholder="33347....."
+                value={jobNumber}
+                onChange={(e) => setJobNumber(e.target.value)}
                 required
               />
             </div>
@@ -50,7 +65,7 @@ export default function NewJobPage() {
               <textarea
                 className="mt-1 w-full rounded-hard border border-border bg-background p-2"
                 rows={3}
-                placeholder="Optional"
+                placeholder="Barrel, Gland, Piston, ...."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />

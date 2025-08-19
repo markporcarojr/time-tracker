@@ -20,7 +20,7 @@ export default async function Page() {
     orderBy: { id: "desc" },
     select: {
       id: true,
-      name: true,
+      customerName: true,
       description: true,
       status: true,
       startedAt: true,
@@ -33,7 +33,7 @@ export default async function Page() {
   // Serialize dates for the client table schema (JobRow expects ISO strings or null)
   const rows: JobRow[] = jobs.map((j) => ({
     id: j.id,
-    name: j.name,
+    customerName: j.name,
     description: j.description,
     status: j.status, // "ACTIVE" | "PAUSED" | "DONE"
     startedAt: j.startedAt ? j.startedAt.toISOString() : null,

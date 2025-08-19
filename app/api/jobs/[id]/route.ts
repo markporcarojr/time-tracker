@@ -23,7 +23,7 @@ export async function GET(
     where: { id: jobId, userId: user.id },
     select: {
       id: true,
-      name: true,
+      customerName: true,
       description: true,
       status: true,
       totalMs: true,

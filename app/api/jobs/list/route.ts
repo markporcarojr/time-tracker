@@ -11,8 +11,8 @@ export async function GET() {
 
   const jobs = await prisma.job.findMany({
     where: { userId: user.id },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
+    select: { id: true, customerName: true },
+    orderBy: { customerName: "asc" },
   });
 
   return NextResponse.json(jobs);

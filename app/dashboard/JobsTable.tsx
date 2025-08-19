@@ -2,6 +2,19 @@
 
 import * as React from "react";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+
+import {
   closestCenter,
   DndContext,
   KeyboardSensor,
@@ -98,7 +111,7 @@ type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
 
 export const jobSchema = z.object({
   id: z.number(),
-  name: z.string(),
+  customerName: z.string(),
   description: z.string().nullable(),
   status: z.enum(["ACTIVE", "PAUSED", "DONE"]),
   startedAt: z.iso.datetime().nullable(), // serialize Dates to ISO strings when passing from server
@@ -162,20 +175,60 @@ function JobDrawer({
   const [addMinutes, setAddMinutes] = React.useState<number>(0);
   const [busy, setBusy] = React.useState(false);
 
-  const submitPatch = async (payload: any) => {
-    setBusy(true);
-    const res = await fetch(`/api/jobs/${job.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setBusy(false);
-    if (!res.ok) {
-      alert("Update failed");
-      return;
+  type PatchResponse = { job: JobRow } | JobRow;
+
+  const submitPatch = async (
+    payload: Partial<Pick<JobRow, "name" | "description" | "status">> & {
+      addMinutes?: number;
+      resetTotal?: boolean;
     }
-    const data = await res.json();
-    onPatched(data.job ?? {});
+  ) => {
+    setBusy(true);
+    try {
+      // create one promise and reuse it (no double fetch)
+      const promise: Promise<PatchResponse> = (async () => {
+        const res = await fetch(`/api/jobs/${job.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          const ct = res.headers.get("content-type") || "";
+          let message = `Update failed (${res.status})`;
+          try {
+            if (ct.includes("application/json")) {
+              const j = await res.json();
+              message = j?.message || j?.error || message;
+            } else {
+              const t = await res.text();
+              message = t || message;
+            }
+          } catch {}
+          throw new Error(message);
+        }
+
+        return (await res.json()) as PatchResponse;
+      })();
+
+      // show loading/success/error UI
+      toast.promise(promise, {
+        loading: "Saving changes…",
+        success: "Job updated",
+        error: (err: unknown) =>
+          err instanceof Error ? err.message : "Update failed",
+      });
+
+      // get the actual data from the promise (not from toast.promise)
+      const data = await promise;
+
+      onPatched("job" in data ? data.job : data);
+      // optional: close drawer on success
+      // setOpen(false)
+    } finally {
+      setBusy(false);
+    }
   };
 
   const saveChanges = () =>
@@ -189,10 +242,6 @@ function JobDrawer({
   const markDone = () => submitPatch({ status: "DONE" });
   const setActive = () => submitPatch({ status: "ACTIVE" });
   const pause = () => submitPatch({ status: "PAUSED" });
-  const resetTotal = () => {
-    if (!confirm("Reset total time to 0 and stop the timer?")) return;
-    submitPatch({ resetTotal: true, status: "PAUSED" });
-  };
 
   return (
     <Drawer open={open} onOpenChange={setOpen} direction="right">
@@ -201,6 +250,7 @@ function JobDrawer({
           {job.name}
         </Button>
       </DrawerTrigger>
+
       <DrawerContent className="min-w-[360px]">
         <DrawerHeader className="gap-1">
           <DrawerTitle className="flex items-center gap-2">
@@ -281,6 +331,7 @@ function JobDrawer({
                 </span>
               ) : null}
             </div>
+
             <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={setActive} disabled={busy}>
                 <IconPlayerPlay className="mr-2 size-4" />
@@ -304,14 +355,34 @@ function JobDrawer({
                 <IconCircleCheckFilled className="mr-2 size-4" />
                 Mark DONE
               </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={resetTotal}
-                disabled={busy}
-              >
-                Reset total
-              </Button>
+
+              {/* Reset total with confirmation */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="destructive" disabled={busy}>
+                    Reset total
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reset total time?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will set total time to 0 and pause the timer. You
+                      cannot undo this action.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() =>
+                        submitPatch({ resetTotal: true, status: "PAUSED" })
+                      }
+                    >
+                      Reset
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
 
@@ -447,6 +518,25 @@ const columns: ColumnDef<JobRow>[] = [
     id: "actions",
     cell: ({ row }) => {
       const job = row.original;
+      const doDelete = async () => {
+        const p = fetch(`/api/jobs/${job.id}`, { method: "DELETE" }).then(
+          async (res) => {
+            if (!res.ok) {
+              const text = await res.text().catch(() => "");
+              throw new Error(text || "Delete failed");
+            }
+          }
+        );
+
+        await toast.promise(p, {
+          loading: "Deleting…",
+          success: "Job deleted",
+          error: (err) => err.message || "Delete failed",
+        });
+
+        row._getTable().options.meta?.removeRow?.(job.id);
+      };
+
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -467,20 +557,29 @@ const columns: ColumnDef<JobRow>[] = [
               <Link href={`/jobs/${job.id}/edit`}>Edit</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={async () => {
-                if (!confirm(`Delete "${job.name}"? This cannot be undone.`))
-                  return;
-                const res = await fetch(`/api/jobs/${job.id}`, {
-                  method: "DELETE",
-                });
-                if (!res.ok) alert("Failed to delete");
-                row._getTable().options.meta?.removeRow?.(job.id);
-              }}
-            >
-              Delete
-            </DropdownMenuItem>
+
+            {/* Confirm delete */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                  Delete
+                </DropdownMenuItem>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete “{job.name}”?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action permanently removes the job and its timing data.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={doDelete}>
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </DropdownMenuContent>
         </DropdownMenu>
       );

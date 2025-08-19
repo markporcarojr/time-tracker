@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function ManualEntryForm() {
-  const [jobs, setJobs] = useState<{ id: number; name: string }[]>([]);
+  const [jobs, setJobs] = useState<{ id: number; customerName: string }[]>([]);
   const [jobId, setJobId] = useState<number | null>(null);
   const [date, setDate] = useState("");
   const [duration, setDuration] = useState(60); // minutes
