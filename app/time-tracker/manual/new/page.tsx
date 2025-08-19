@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function ManualEntryForm() {
   const [jobs, setJobs] = useState<{ id: number; name: string }[]>([]);
@@ -30,65 +36,77 @@ export default function ManualEntryForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-6 space-y-4">
-      <h1 className="text-2xl font-semibold">Manual Time Entry</h1>
+    <div className="mx-auto max-w-xl p-6">
+      <Card className="shadow-plate border-border">
+        <CardHeader>
+          <CardTitle>Manual Time Entry</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="datetime-local"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            </div>
 
-      <label className="block">
-        Date
-        <input
-          type="datetime-local"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="w-full p-2 border rounded"
-          required
-        />
-      </label>
+            <div className="space-y-2">
+              <Label htmlFor="duration">Duration (minutes)</Label>
+              <Input
+                id="duration"
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(parseInt(e.target.value))}
+                required
+                min={1}
+              />
+            </div>
 
-      <label className="block">
-        Duration (minutes)
-        <input
-          type="number"
-          value={duration}
-          onChange={(e) => setDuration(parseInt(e.target.value))}
-          className="w-full p-2 border rounded"
-          required
-          min={1}
-        />
-      </label>
+            <div className="space-y-2">
+              <Label htmlFor="job">Job (optional)</Label>
+              <Select
+                value={jobId?.toString() ?? ""}
+                onValueChange={(value) => setJobId(value ? parseInt(value) : null)}
+              >
+                <SelectTrigger id="job">
+                  <SelectValue placeholder="Select a job (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No Job</SelectItem>
+                  {jobs.map((job) => (
+                    <SelectItem key={job.id} value={job.id.toString()}>
+                      {job.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      <label className="block">
-        Job (optional)
-        <select
-          value={jobId ?? ""}
-          onChange={(e) =>
-            setJobId(e.target.value ? parseInt(e.target.value) : null)
-          }
-          className="w-full p-2 border rounded"
-        >
-          <option value="">No Job</option>
-          {jobs.map((job) => (
-            <option key={job.id} value={job.id}>
-              {job.name}
-            </option>
-          ))}
-        </select>
-      </label>
+            <div className="space-y-2">
+              <Label htmlFor="note">Note (optional)</Label>
+              <Textarea
+                id="note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Add any notes about this time entry..."
+              />
+            </div>
 
-      <label className="block">
-        Note (optional)
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          className="w-full p-2 border rounded"
-        />
-      </label>
-
-      <button
-        type="submit"
-        className="bg-green-600 text-white px-4 py-2 rounded"
-      >
-        Submit
-      </button>
-    </form>
+            <div className="pt-2">
+              <Button
+                type="submit"
+                className="bg-primary text-primary-foreground"
+              >
+                Submit
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
