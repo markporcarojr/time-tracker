@@ -30,11 +30,11 @@ export default async function JobPage({ params }: { params: { id: string } }) {
     <div className="mx-auto max-w-3xl p-6">
       <TimerClient
         jobId={job.id}
-        name={job.name}
+        customerName={job.customerName}
         description={job.description}
         totalMs={job.totalMs}
         startedAtISO={job.startedAt ? job.startedAt.toISOString() : null}
-        status={job.status as any}
+        status={job.status as "ACTIVE" | "PAUSED" | "DONE"}
       />
     </div>
   );
