@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Play, Pause, Timer as TimerIcon } from "lucide-react";
+import { Play, Pause, Timer as TimerIcon, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
@@ -33,13 +33,21 @@ export default function TimerClient(props: {
   const [startedAt, setStartedAt] = useState<number | null>(
     props.startedAtISO ? new Date(props.startedAtISO).getTime() : null
   );
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Tick every second to display live time
   const [displaySec, setDisplaySec] = useState<number>(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const recalc = () => {
-    const liveMs = baseMs + (startedAt ? Date.now() - startedAt : 0);
+    // If timer is not active or hasn't started, show saved total
+    if (status !== "ACTIVE" || !startedAt) {
+      setDisplaySec(Math.floor(baseMs / 1000));
+      return;
+    }
+    
+    // Calculate live time when running
+    const liveMs = baseMs + (Date.now() - startedAt);
     setDisplaySec(Math.floor(liveMs / 1000));
   };
 
@@ -68,63 +76,46 @@ export default function TimerClient(props: {
     return () => clearInterval(id);
   }, [props.jobId]);
 
-  const start = async () => {
-    // Send current time as startedAt
-    const startedAtISO = new Date().toISOString();
-    const res = await fetch(`/api/jobs/${props.jobId}/start`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startedAt: startedAtISO }),
-    });
-    if (res.ok) {
-      setStatus("ACTIVE");
-      setStartedAt(Date.now());
-      router.refresh();
-    }
-  };
-
-  const pause = async () => {
-    // First, check if the job has a startedAt in the DB
-    const resCheck = await fetch(`/api/jobs/${props.jobId}`, {
-      cache: "no-store",
-    });
-    if (resCheck.ok) {
-      const { job } = await resCheck.json();
-      if (!job.startedAt) {
-        // If startedAt is null, start the job instead and send current time
-        await start();
-        return;
+  const updateJobStatus = async (newStatus: JobStatus) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/jobs/${props.jobId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      
+      if (res.ok) {
+        const { job } = await res.json();
+        setStatus(job.status);
+        setBaseMs(job.totalMs);
+        setStartedAt(job.startedAt ? new Date(job.startedAt).getTime() : null);
+        
+        // If marking as done, redirect to dashboard
+        if (newStatus === "DONE") {
+          router.push("/dashboard");
+        }
+      } else {
+        console.error("Failed to update job status");
       }
-    }
-    // Otherwise, proceed to pause
-    const res = await fetch(`/api/jobs/${props.jobId}/pause`, {
-      method: "POST",
-    });
-    if (res.ok) {
-      const json = await res.json();
-      setStatus("PAUSED");
-      setStartedAt(json?.startedAt ? new Date(json.startedAt).getTime() : null);
-      if (typeof json?.totalMs === "number") setBaseMs(json.totalMs);
-      router.refresh();
+    } catch (error) {
+      console.error("Error updating job status:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const setStatusOnly = async (s: JobStatus) => {
-    const res = await fetch(`/api/jobs/${props.jobId}/status`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: s }),
-    });
-    if (res.ok) {
-      const { job } = await res.json();
-      setStatus(job.status);
-      setBaseMs(job.totalMs);
-      setStartedAt(job.startedAt ? new Date(job.startedAt).getTime() : null);
-      router.refresh();
+  const handleStartStop = () => {
+    if (status === "ACTIVE") {
+      updateJobStatus("PAUSED");
+    } else {
+      updateJobStatus("ACTIVE");
     }
   };
 
-  const running = status === "ACTIVE";
+  const handleMarkCompleted = () => {
+    updateJobStatus("DONE");
+  };
 
   return (
     <Card className="shadow-plate border-border">
@@ -132,7 +123,7 @@ export default function TimerClient(props: {
         <div>
           <CardTitle className="flex items-center gap-2">
             <TimerIcon className="h-5 w-5 text-primary" />
-            <span>{props.name}</span>
+            <span>{props.customerName}</span>
           </CardTitle>
           {props.description ? (
             <p className="text-sm text-muted-foreground mt-1">
@@ -146,12 +137,13 @@ export default function TimerClient(props: {
             <Badge
               key={s}
               role="button"
-              onClick={() => setStatusOnly(s)}
+              onClick={() => updateJobStatus(s)}
               variant={status === s ? "default" : "secondary"}
               className={cn(
                 "cursor-pointer",
                 s === "ACTIVE" && "bg-primary text-primary-foreground",
-                s === "DONE" && "bg-ink text-white"
+                s === "DONE" && "bg-ink text-white",
+                isLoading && "opacity-50 cursor-not-allowed"
               )}
             >
               {s}
@@ -165,27 +157,69 @@ export default function TimerClient(props: {
       <CardContent className="py-8">
         <div className="text-center">
           <div className="text-[64px] leading-none font-mono tracking-tight">
-            {fmtHMS(status === "DONE" ? Math.floor(baseMs / 1000) : displaySec)}
+            {fmtHMS(displaySec)}
           </div>
           <div className="mt-2 text-sm text-muted-foreground">
-            Saved total: <strong>{fmtHMS(Math.floor(baseMs / 1000))}</strong>
+            {status === "ACTIVE" && startedAt ? (
+              <span className="text-green-600 font-semibold">Running...</span>
+            ) : status === "DONE" ? (
+              <span className="text-gray-600">Completed</span>
+            ) : (
+              <span>Paused</span>
+            )}
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            Total saved: <strong>{fmtHMS(Math.floor(baseMs / 1000))}</strong>
           </div>
         </div>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          {!running ? (
-            <Button onClick={start} className="bg-green-600 hover:bg-green-700">
-              <Play className="mr-2 h-4 w-4" />
-              Start
-            </Button>
-          ) : (
-            <Button
-              onClick={pause}
-              className="bg-yellow-600 hover:bg-yellow-700"
-            >
-              <Pause className="mr-2 h-4 w-4" />
-              Pause
-            </Button>
+          {status !== "DONE" && (
+            <>
+              <Button 
+                onClick={handleStartStop}
+                disabled={isLoading}
+                className={cn(
+                  status === "ACTIVE" 
+                    ? "bg-yellow-600 hover:bg-yellow-700" 
+                    : "bg-green-600 hover:bg-green-700"
+                )}
+              >
+                {status === "ACTIVE" ? (
+                  <>
+                    <Pause className="mr-2 h-4 w-4" />
+                    Stop
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4" />
+                    Start
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={handleMarkCompleted}
+                disabled={isLoading}
+                variant="outline"
+                className="border-green-600 text-green-600 hover:bg-green-50"
+              >
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Mark as Completed
+              </Button>
+            </>
+          )}
+          
+          {status === "DONE" && (
+            <div className="text-center">
+              <p className="text-green-600 font-semibold mb-2">✓ Job Completed</p>
+              <Button 
+                onClick={() => router.push("/dashboard")}
+                variant="outline"
+              >
+                Back to Dashboard
+              </Button>
+            </div>
           )}
         </div>
       </CardContent>
