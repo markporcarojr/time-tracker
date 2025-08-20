@@ -35,6 +35,7 @@ import { Trash2, Plus, Filter, ArrowUpDown, Search } from "lucide-react";
 
 type Job = {
   id: number;
+  jobNumber: number | null;
   customerName: string;
   description: string | null;
   totalMs: number;
@@ -85,7 +86,8 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
       list = list.filter(
         (j) =>
           j.customerName.toLowerCase().includes(q) ||
-          (j.description?.toLowerCase().includes(q) ?? false)
+          (j.description?.toLowerCase().includes(q) ?? false) ||
+          (j.jobNumber?.toString().includes(q) ?? false)
       );
     }
 
@@ -182,7 +184,7 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
             <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               aria-label="Search jobs"
-              placeholder="Search by name or description"
+              placeholder="Search by customer name or job number"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="pl-8"
@@ -254,11 +256,11 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
                   <Link
                     href={`/jobs/${job.id}`}
                     className="flex-1 block focus:outline-none min-w-0"
-                    aria-label={`Open job ${job.name}`}
+                    aria-label={`Open job ${job.customerName}`}
                   >
                     <div>
                       <div className="truncate text-base font-semibold">
-                        {job.name}
+                        {job.customerName}
                       </div>
                       {job.description ? (
                         <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
@@ -287,7 +289,7 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          aria-label={`Delete job ${job.name}`}
+                          aria-label={`Delete job ${job.customerName}`}
                           className="h-8 w-8 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                           disabled={deletingJobId === job.id || isPending}
                         >
@@ -311,7 +313,7 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete job</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to delete “{job.name}”? This
+                            Are you sure you want to delete “{job.customerName}”? This
                             cannot be undone and will also delete all associated
                             time sessions.
                           </AlertDialogDescription>
