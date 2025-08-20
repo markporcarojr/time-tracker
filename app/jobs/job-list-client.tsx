@@ -46,7 +46,7 @@ interface JobListClientProps {
 }
 
 type StatusFilter = "ALL" | Job["status"];
-type SortKey = "created" | "name" | "status";
+type SortKey = "created" | "customerName" | "status";
 type SortDir = "asc" | "desc";
 
 /**
@@ -84,7 +84,7 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
       const q = query.trim().toLowerCase();
       list = list.filter(
         (j) =>
-          j.name.toLowerCase().includes(q) ||
+          j.customerName.toLowerCase().includes(q) ||
           (j.description?.toLowerCase().includes(q) ?? false)
       );
     }
@@ -92,8 +92,8 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
     // sort
     list.sort((a, b) => {
       let res = 0;
-      if (sortKey === "name") {
-        res = a.name.localeCompare(b.name);
+      if (sortKey === "customerName") {
+        res = a.customerName.localeCompare(b.customerName);
       } else if (sortKey === "status") {
         res = a.status.localeCompare(b.status);
       } else {
