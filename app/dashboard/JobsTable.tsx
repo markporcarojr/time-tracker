@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,7 +15,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
 
 import {
   closestCenter,
@@ -50,8 +52,9 @@ import {
   VisibilityState,
 } from "@tanstack/react-table";
 
+import type { RowData } from "@tanstack/table-core"; // keep only RowData
+
 import { z } from "zod";
-import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -107,20 +110,40 @@ import {
   IconEdit,
 } from "@tabler/icons-react";
 
+/* ---------- Table meta typing so cells can call removeRow/invalidate ---------- */
+declare module "@tanstack/table-core" {
+  // underscore to satisfy no-unused-vars for generics
+  interface TableMeta<_TData extends RowData> {
+    removeRow?: (id: number) => void;
+    invalidate?: () => void;
+  }
+}
+
+/* ---------------- Types & Schema ---------------- */
+
 type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
 
 export const jobSchema = z.object({
   id: z.number(),
   customerName: z.string(),
+  jobNumber: z.number().int().nullable(),
   description: z.string().nullable(),
   status: z.enum(["ACTIVE", "PAUSED", "DONE"]),
-  startedAt: z.iso.datetime().nullable(), // serialize Dates to ISO strings when passing from server
-  stoppedAt: z.iso.datetime().nullable(),
+  startedAt: z.string().datetime().nullable(),
+  stoppedAt: z.string().datetime().nullable(),
   totalMs: z.number(),
   userId: z.number(),
 });
 
-export type JobRow = z.infer<typeof jobSchema>;
+export type JobRow = {
+  id: number;
+  customerName: string;
+  jobNumber: number | null;
+  description: string | null;
+  status: JobStatus;
+  totalMs: number;
+  startedAt: string | Date | null; // string if serialized from server
+};
 
 /* ---------------- helpers ---------------- */
 
@@ -135,20 +158,41 @@ function fmtHMSfromMs(ms: number) {
 function liveTotalMs(job: JobRow) {
   if (job.status === "ACTIVE" && job.startedAt) {
     const start = new Date(job.startedAt).getTime();
-    const now = Date.now();
-    return job.totalMs + Math.max(0, now - start);
+    return job.totalMs + Math.max(0, Date.now() - start);
   }
   return job.totalMs;
 }
 
-/* --------------- drag handle -------------- */
+/* --------------- total cell (uses hooks) -------------- */
 
-function DragHandle({ id }: { id: number }) {
-  const { attributes, listeners } = useSortable({ id });
+function TotalCell({ job }: { job: JobRow }) {
+  const [, setTick] = React.useState(0);
+  React.useEffect(() => {
+    if (job.status !== "ACTIVE" || !job.startedAt) return;
+    const id = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [job.status, job.startedAt]);
+  return (
+    <div className="text-right font-mono">{fmtHMSfromMs(liveTotalMs(job))}</div>
+  );
+}
+
+/* --------------- DnD: pass handle props via context -------------- */
+
+// Use React types so we don't depend on dnd-kit internal type exports
+type HandleBindings = {
+  attributes: React.HTMLAttributes<HTMLButtonElement>;
+  listeners: React.DOMAttributes<HTMLButtonElement>;
+};
+
+const RowDndCtx = React.createContext<HandleBindings | null>(null);
+
+function DragHandle() {
+  const ctx = React.useContext(RowDndCtx);
   return (
     <Button
-      {...attributes}
-      {...listeners}
+      {...(ctx?.attributes ?? {})}
+      {...(ctx?.listeners ?? {})}
       variant="ghost"
       size="icon"
       className="text-muted-foreground size-7 hover:bg-transparent"
@@ -169,7 +213,10 @@ function JobDrawer({
   onPatched: (next: Partial<JobRow>) => void;
 }) {
   const [open, setOpen] = React.useState(false);
-  const [name, setName] = React.useState(job.name);
+  const [customerName, setCustomerName] = React.useState(job.customerName);
+  const [jobNumber, setJobNumber] = React.useState<string | number>(
+    job.jobNumber ?? 0
+  );
   const [description, setDescription] = React.useState(job.description ?? "");
   const [status, setStatus] = React.useState<JobStatus>(job.status);
   const [addMinutes, setAddMinutes] = React.useState<number>(0);
@@ -178,14 +225,15 @@ function JobDrawer({
   type PatchResponse = { job: JobRow } | JobRow;
 
   const submitPatch = async (
-    payload: Partial<Pick<JobRow, "name" | "description" | "status">> & {
+    payload: Partial<
+      Pick<JobRow, "customerName" | "description" | "status" | "jobNumber">
+    > & {
       addMinutes?: number;
       resetTotal?: boolean;
     }
   ) => {
     setBusy(true);
     try {
-      // create one promise and reuse it (no double fetch)
       const promise: Promise<PatchResponse> = (async () => {
         const res = await fetch(`/api/jobs/${job.id}`, {
           method: "PATCH",
@@ -193,14 +241,13 @@ function JobDrawer({
           body: JSON.stringify(payload),
           cache: "no-store",
         });
-
         if (!res.ok) {
           const ct = res.headers.get("content-type") || "";
           let message = `Update failed (${res.status})`;
           try {
             if (ct.includes("application/json")) {
               const j = await res.json();
-              message = j?.message || j?.error || message;
+              message = (j as any)?.message || (j as any)?.error || message;
             } else {
               const t = await res.text();
               message = t || message;
@@ -208,24 +255,19 @@ function JobDrawer({
           } catch {}
           throw new Error(message);
         }
-
         return (await res.json()) as PatchResponse;
       })();
 
-      // show loading/success/error UI
-      toast.promise(promise, {
+      await toast.promise(promise, {
         loading: "Saving changes…",
         success: "Job updated",
         error: (err: unknown) =>
           err instanceof Error ? err.message : "Update failed",
       });
 
-      // get the actual data from the promise (not from toast.promise)
       const data = await promise;
-
       onPatched("job" in data ? data.job : data);
-      // optional: close drawer on success
-      // setOpen(false)
+      // setOpen(false);
     } finally {
       setBusy(false);
     }
@@ -233,7 +275,13 @@ function JobDrawer({
 
   const saveChanges = () =>
     submitPatch({
-      name,
+      customerName,
+      jobNumber:
+        jobNumber === ""
+          ? null
+          : typeof jobNumber === "string"
+          ? Number(jobNumber)
+          : jobNumber,
       description: description || null,
       status,
       addMinutes: addMinutes > 0 ? addMinutes : undefined,
@@ -247,7 +295,7 @@ function JobDrawer({
     <Drawer open={open} onOpenChange={setOpen} direction="right">
       <DrawerTrigger asChild>
         <Button variant="link" className="text-foreground w-fit px-0 text-left">
-          {job.name}
+          {job.customerName}
         </Button>
       </DrawerTrigger>
 
@@ -261,11 +309,21 @@ function JobDrawer({
 
         <div className="flex flex-col gap-4 overflow-y-auto px-4 pb-4 text-sm">
           <div className="grid gap-3">
-            <Label htmlFor="j-name">Name</Label>
+            <Label htmlFor="j-name">Customer Name</Label>
             <Input
               id="j-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+            />
+          </div>
+
+          <div className="grid gap-3">
+            <Label htmlFor="j-number">Job Number</Label>
+            <Input
+              id="j-number"
+              value={jobNumber}
+              onChange={(e) => setJobNumber(e.target.value)}
+              inputMode="numeric"
             />
           </div>
 
@@ -273,7 +331,7 @@ function JobDrawer({
             <Label htmlFor="j-desc">Description</Label>
             <Input
               id="j-desc"
-              value={description}
+              value={description ?? ""}
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
@@ -356,7 +414,6 @@ function JobDrawer({
                 Mark DONE
               </Button>
 
-              {/* Reset total with confirmation */}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button size="sm" variant="destructive" disabled={busy}>
@@ -413,11 +470,18 @@ function JobDrawer({
 
 /* ---------------- table columns ---------------- */
 
-const columns: ColumnDef<JobRow>[] = [
+// Radix Checkbox can return "indeterminate"
+type Checked = boolean | "indeterminate";
+
+export const columns: ColumnDef<JobRow>[] = [
   {
     id: "drag",
     header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
+    cell: () => (
+      <div className="w-8">
+        <DragHandle />
+      </div>
+    ),
     enableSorting: false,
     enableHiding: false,
   },
@@ -430,7 +494,9 @@ const columns: ColumnDef<JobRow>[] = [
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          onCheckedChange={(checked: Checked) =>
+            table.toggleAllPageRowsSelected(!!checked)
+          }
           aria-label="Select all"
         />
       </div>
@@ -439,7 +505,7 @@ const columns: ColumnDef<JobRow>[] = [
       <div className="flex items-center justify-center">
         <Checkbox
           checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          onCheckedChange={(checked: Checked) => row.toggleSelected(!!checked)}
           aria-label="Select row"
         />
       </div>
@@ -448,18 +514,17 @@ const columns: ColumnDef<JobRow>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "name",
+    accessorKey: "customerName",
     header: "Job",
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const job = row.original;
       return (
         <div className="flex flex-col">
           <JobDrawer
             job={job}
             onPatched={(next) => {
-              // optimistic row update
-              Object.assign(job, next);
-              row._getTable().options.meta?.invalidate?.();
+              Object.assign(job, next); // optimistic row update
+              table.options.meta?.invalidate?.(); // force a rerender
             }}
           />
           {job.description ? (
@@ -467,6 +532,21 @@ const columns: ColumnDef<JobRow>[] = [
               {job.description}
             </div>
           ) : null}
+        </div>
+      );
+    },
+  },
+
+  {
+    id: "jobNumber",
+    header: "Job #",
+    cell: ({ row }) => {
+      const jobNumber = row.original.jobNumber;
+      return (
+        <div className="text-left">
+          {typeof jobNumber === "number"
+            ? jobNumber.toString().padStart(4, "0")
+            : "-"}
         </div>
       );
     },
@@ -487,37 +567,15 @@ const columns: ColumnDef<JobRow>[] = [
     },
   },
   {
-    id: "running",
-    header: "Running",
-    cell: ({ row }) => {
-      const running =
-        row.original.status === "ACTIVE" && !!row.original.startedAt;
-      return <span className="text-sm">{running ? "Yes" : "No"}</span>;
-    },
-  },
-  {
     id: "total",
     header: () => <div className="w-full text-right">Total</div>,
-    cell: ({ row }) => {
-      const [nowTick, setNowTick] = React.useState(0);
-      const job = row.original;
-
-      // live tick if active
-      React.useEffect(() => {
-        if (job.status !== "ACTIVE" || !job.startedAt) return;
-        const id = setInterval(() => setNowTick((n) => n + 1), 1000);
-        return () => clearInterval(id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-      }, [job.status, job.startedAt]);
-
-      const total = fmtHMSfromMs(liveTotalMs(job));
-      return <div className="text-right font-mono">{total}</div>;
-    },
+    cell: ({ row }) => <TotalCell job={row.original} />,
   },
   {
     id: "actions",
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const job = row.original;
+
       const doDelete = async () => {
         const p = fetch(`/api/jobs/${job.id}`, { method: "DELETE" }).then(
           async (res) => {
@@ -528,13 +586,14 @@ const columns: ColumnDef<JobRow>[] = [
           }
         );
 
-        await toast.promise(p, {
+        toast.promise(p, {
           loading: "Deleting…",
           success: "Job deleted",
-          error: (err) => err.message || "Delete failed",
+          error: (err: unknown) =>
+            err instanceof Error ? err.message : "Delete failed",
         });
 
-        row._getTable().options.meta?.removeRow?.(job.id);
+        table.options.meta?.removeRow?.(job.id);
       };
 
       return (
@@ -558,7 +617,6 @@ const columns: ColumnDef<JobRow>[] = [
             </DropdownMenuItem>
             <DropdownMenuSeparator />
 
-            {/* Confirm delete */}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <DropdownMenuItem className="text-destructive focus:text-destructive">
@@ -567,7 +625,9 @@ const columns: ColumnDef<JobRow>[] = [
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete “{job.name}”?</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    Delete “{job.customerName}”?
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
                     This action permanently removes the job and its timing data.
                   </AlertDialogDescription>
@@ -590,24 +650,37 @@ const columns: ColumnDef<JobRow>[] = [
 /* --------------- draggable row --------------- */
 
 function DraggableRow({ row }: { row: Row<JobRow> }) {
-  const { transform, transition, setNodeRef, isDragging } = useSortable({
-    id: row.original.id,
-  });
+  const {
+    transform,
+    transition,
+    setNodeRef,
+    isDragging,
+    attributes,
+    listeners,
+  } = useSortable({ id: row.original.id });
+
+  // Cast dnd-kit bindings to React handler/attribute types for our Button
+  const handleBindings: HandleBindings = {
+    attributes: attributes as React.HTMLAttributes<HTMLButtonElement>,
+    listeners: (listeners ?? {}) as React.DOMAttributes<HTMLButtonElement>,
+  };
 
   return (
-    <TableRow
-      data-state={row.getIsSelected() && "selected"}
-      data-dragging={isDragging}
-      ref={setNodeRef}
-      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-    >
-      {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id}>
-          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-        </TableCell>
-      ))}
-    </TableRow>
+    <RowDndCtx.Provider value={handleBindings}>
+      <TableRow
+        data-state={row.getIsSelected() && "selected"}
+        data-dragging={isDragging}
+        ref={setNodeRef}
+        className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
+        style={{ transform: CSS.Transform.toString(transform), transition }}
+      >
+        {row.getVisibleCells().map((cell) => (
+          <TableCell key={cell.id}>
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          </TableCell>
+        ))}
+      </TableRow>
+    </RowDndCtx.Provider>
   );
 }
 
@@ -632,14 +705,13 @@ export function JobsTable({ data: initialData }: { data: JobRow[] }) {
     useSensor(TouchSensor, {}),
     useSensor(KeyboardSensor, {})
   );
-  const sortableId = React.useId();
 
   const dataIds = React.useMemo<UniqueIdentifier[]>(
     () => data.map(({ id }) => id),
     [data]
   );
 
-  const table = useReactTable({
+  const table = useReactTable<JobRow>({
     data,
     columns,
     state: {
@@ -666,18 +738,20 @@ export function JobsTable({ data: initialData }: { data: JobRow[] }) {
       removeRow: (id: number) =>
         setData((prev) => prev.filter((r) => r.id !== id)),
       invalidate: () => setData((prev) => [...prev]),
-    } as any,
+    },
   });
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
-    if (active && over && active.id !== over.id) {
-      setData((curr) => {
-        const oldIndex = dataIds.indexOf(active.id);
-        const newIndex = dataIds.indexOf(over.id);
-        return arrayMove(curr, oldIndex, newIndex);
-      });
-    }
+    if (!active || !over || active.id === over.id) return;
+
+    setData((curr) => {
+      const ids = curr.map((r) => r.id) as UniqueIdentifier[];
+      const oldIndex = ids.indexOf(active.id);
+      const newIndex = ids.indexOf(over.id);
+      if (oldIndex === -1 || newIndex === -1) return curr;
+      return arrayMove(curr, oldIndex, newIndex);
+    });
   }
 
   return (
@@ -707,7 +781,7 @@ export function JobsTable({ data: initialData }: { data: JobRow[] }) {
                     key={column.id}
                     className="capitalize"
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
+                    onCheckedChange={(value: boolean) =>
                       column.toggleVisibility(!!value)
                     }
                   >
@@ -728,7 +802,6 @@ export function JobsTable({ data: initialData }: { data: JobRow[] }) {
           modifiers={[restrictToVerticalAxis]}
           onDragEnd={handleDragEnd}
           sensors={sensors}
-          id={sortableId}
         >
           <Table>
             <TableHeader className="bg-muted sticky top-0 z-10">

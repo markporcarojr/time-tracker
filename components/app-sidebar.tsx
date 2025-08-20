@@ -16,7 +16,7 @@ import { IconInnerShadowTop } from "@tabler/icons-react";
 import { navMain, navSecondary } from "../data/navData";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
-import { NavUser } from "@/components/nav-user";
+import { NavUser } from "@/components/NavUser";
 
 type UserMini = {
   name?: string | null;
@@ -67,13 +67,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser
-          user={{
-            customerName: user?.name ?? "Signed out",
-            email: user?.email ?? "",
-            avatar: user?.avatar ?? "/avatars/placeholder.png",
-          }}
-        />
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
   );

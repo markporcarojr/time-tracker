@@ -24,6 +24,7 @@ export async function GET(
     select: {
       id: true,
       customerName: true,
+      jobNumber: true,
       description: true,
       status: true,
       totalMs: true,
@@ -36,6 +37,14 @@ export async function GET(
 
   return NextResponse.json({ job });
 }
+
+type PatchBody = {
+  name?: string;
+  description?: string;
+  addMinutes?: number;
+  resetTotal?: boolean;
+  status?: "ACTIVE" | "PAUSED" | "DONE";
+};
 
 export async function PATCH(
   req: Request,

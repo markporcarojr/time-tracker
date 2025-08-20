@@ -21,6 +21,7 @@ export default async function Page() {
     select: {
       id: true,
       customerName: true,
+      jobNumber: true,
       description: true,
       status: true,
       startedAt: true,
@@ -33,7 +34,8 @@ export default async function Page() {
   // Serialize dates for the client table schema (JobRow expects ISO strings or null)
   const rows: JobRow[] = jobs.map((j) => ({
     id: j.id,
-    customerName: j.name,
+    jobNumber: j.jobNumber,
+    customerName: j.customerName,
     description: j.description,
     status: j.status, // "ACTIVE" | "PAUSED" | "DONE"
     startedAt: j.startedAt ? j.startedAt.toISOString() : null,
@@ -50,6 +52,7 @@ export default async function Page() {
           "--header-height": "calc(var(--spacing) * 12)",
         } as React.CSSProperties
       }
+      defaultOpen={false}
     >
       <AppSidebar variant="inset" user={user} />
       <SidebarInset>

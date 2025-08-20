@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function NewJobPage() {
   const router = useRouter();
@@ -24,11 +25,12 @@ export default function NewJobPage() {
     });
 
     if (!res.ok) {
-      alert(await res.text());
+      toast.error(await res.text());
       return;
     }
-    const job = await res.json();
-    router.push(`/jobs/${job.id}`); // go straight to timer page
+    toast.success("Job created successfully");
+    // const job = await res.json();
+    router.push("/dashboard"); // go straight to timer page
   }
 
   return (

@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
@@ -53,7 +54,7 @@ export default function EditJobForm({ job }: { job: Job }) {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name,
+        customerName,
         description: description || null,
         jobNumber: jobNumber ? Number(jobNumber) : null,
         status,
@@ -61,7 +62,9 @@ export default function EditJobForm({ job }: { job: Job }) {
       }),
     });
     setSubmitting(false);
-    if (!res.ok) return alert("Failed to update job");
+    if (!res.ok) return toast.error("Failed to update job");
+    toast.success("Job updated");
+    setResetting(false);
     router.push(`/jobs/${job.id}`);
     router.refresh();
   };
@@ -75,7 +78,8 @@ export default function EditJobForm({ job }: { job: Job }) {
       body: JSON.stringify({ resetTotal: true, status: "PAUSED" }),
     });
     setResetting(false);
-    if (!res.ok) return alert("Failed to reset total");
+    if (!res.ok) return toast.error("Failed to reset total");
+    toast.success("Total reset to 0");
     router.refresh();
   };
 

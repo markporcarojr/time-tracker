@@ -15,6 +15,7 @@ export default async function JobListPage() {
     orderBy: { startedAt: "desc" },
     select: {
       id: true,
+      jobNumber: true,
       customerName: true,
       description: true,
       status: true,
