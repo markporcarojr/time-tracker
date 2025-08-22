@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import StatusPill from "./StatusPill";
 
 import {
   AlertDialog,
@@ -46,12 +47,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Meta from "./Meta";
 
 import {
   ArrowUpDown,
-  BadgeCheck,
-  CirclePause,
-  CirclePlay,
   Clock,
   EllipsisVertical,
   Filter,
@@ -61,11 +60,11 @@ import {
   Search,
   Trash2,
   User2,
-  Wrench,
 } from "lucide-react";
 
 import { convertToHours } from "@/lib/msToHours";
 import { JobRow } from "../dashboard/JobsTable";
+import { STATUS_META } from "@/data/statusMeta";
 
 /* -------------------------------------------------------------------------- */
 /*                                   Types                                    */
@@ -92,65 +91,65 @@ type SortDir = "asc" | "desc";
 /*                                  Helpers                                   */
 /* -------------------------------------------------------------------------- */
 
-const STATUS_META = {
-  ACTIVE: {
-    dot: "bg-emerald-500",
-    pill: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20",
-    bar: "bg-gradient-to-r from-emerald-500/70 to-emerald-400/40",
-    icon: <CirclePlay className="h-3.5 w-3.5" />,
-  },
-  PAUSED: {
-    dot: "bg-amber-500",
-    pill: "bg-amber-500/10 text-amber-600 ring-amber-500/20",
-    bar: "bg-gradient-to-r from-amber-500/70 to-amber-400/40",
-    icon: <CirclePause className="h-3.5 w-3.5" />,
-  },
-  MANUAL: {
-    dot: "bg-sky-500",
-    pill: "bg-sky-500/10 text-sky-700 ring-sky-500/20",
-    bar: "bg-gradient-to-r from-sky-500/70 to-sky-400/40",
-    icon: <Wrench className="h-3.5 w-3.5" />,
-  },
-  DONE: {
-    dot: "bg-muted-foreground/60",
-    pill: "bg-muted text-muted-foreground ring-muted/10",
-    bar: "bg-muted",
-    icon: <BadgeCheck className="h-3.5 w-3.5" />,
-  },
-} as const;
+// const STATUS_META = {
+//   ACTIVE: {
+//     dot: "bg-emerald-500",
+//     pill: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20",
+//     bar: "bg-gradient-to-r from-emerald-500/70 to-emerald-400/40",
+//     icon: <CirclePlay className="h-3.5 w-3.5" />,
+//   },
+//   PAUSED: {
+//     dot: "bg-amber-500",
+//     pill: "bg-amber-500/10 text-amber-600 ring-amber-500/20",
+//     bar: "bg-gradient-to-r from-amber-500/70 to-amber-400/40",
+//     icon: <CirclePause className="h-3.5 w-3.5" />,
+//   },
+//   MANUAL: {
+//     dot: "bg-sky-500",
+//     pill: "bg-sky-500/10 text-sky-700 ring-sky-500/20",
+//     bar: "bg-gradient-to-r from-sky-500/70 to-sky-400/40",
+//     icon: <Wrench className="h-3.5 w-3.5" />,
+//   },
+//   DONE: {
+//     dot: "bg-muted-foreground/60",
+//     pill: "bg-muted text-muted-foreground ring-muted/10",
+//     bar: "bg-muted",
+//     icon: <BadgeCheck className="h-3.5 w-3.5" />,
+//   },
+// } as const;
 
-function StatusPill({ status }: { status: Job["status"] }) {
-  const meta = STATUS_META[status];
-  return (
-    <Badge
-      variant="outline"
-      className={`inline-flex items-center gap-1.5 border-0 ring-1 ${meta.pill}`}
-    >
-      {meta.icon}
-      <span className="text-[11px] font-medium tracking-wide">{status}</span>
-    </Badge>
-  );
-}
+// function StatusPill({ status }: { status: Job["status"] }) {
+//   const meta = STATUS_META[status];
+//   return (
+//     <Badge
+//       variant="outline"
+//       className={`inline-flex items-center gap-1.5 border-0 ring-1 ${meta.pill}`}
+//     >
+//       {meta.icon}
+//       <span className="text-[11px] font-medium tracking-wide">{status}</span>
+//     </Badge>
+//   );
+// }
 
-function Meta({
-  icon,
-  children,
-  title,
-}: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  title: string;
-}) {
-  return (
-    <div
-      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
-      title={title}
-    >
-      <span className="opacity-70">{icon}</span>
-      <span className="truncate">{children}</span>
-    </div>
-  );
-}
+// function Meta({
+//   icon,
+//   children,
+//   title,
+// }: {
+//   icon: React.ReactNode;
+//   children: React.ReactNode;
+//   title: string;
+// }) {
+//   return (
+//     <div
+//       className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
+//       title={title}
+//     >
+//       <span className="opacity-70">{icon}</span>
+//       <span className="truncate">{children}</span>
+//     </div>
+//   );
+// }
 
 function fmtHMSfromMs(ms: number) {
   const sec = Math.floor(ms / 1000);
