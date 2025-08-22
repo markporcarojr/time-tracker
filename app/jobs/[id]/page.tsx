@@ -31,6 +31,7 @@ export default async function JobPage({ params }: { params: { id: string } }) {
   return (
     <div className="mx-auto max-w-3xl p-6">
       <TimerClient
+        jobNumber={job.jobNumber}
         jobId={job.id}
         customerName={job.customerName}
         description={job.description}

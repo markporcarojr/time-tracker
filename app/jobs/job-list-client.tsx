@@ -65,107 +65,27 @@ import {
 import { convertToHours } from "@/lib/msToHours";
 import { JobRow } from "../dashboard/JobsTable";
 import { STATUS_META } from "@/data/statusMeta";
+import { fmtHMS } from "@/lib/format";
+import { liveTotalMs } from "@/lib/utils";
+import JobCard from "./JobCard";
+import type { Job, $Enums } from "@prisma/client";
 
 /* -------------------------------------------------------------------------- */
 /*                                   Types                                    */
 /* -------------------------------------------------------------------------- */
 
-type Job = {
-  id: number;
-  jobNumber: number | null;
-  customerName: string;
-  description: string | null;
-  totalMs: number;
-  status: "ACTIVE" | "DONE" | "PAUSED" | "MANUAL";
-};
-
 interface JobListClientProps {
   initialJobs: Job[];
 }
 
-type StatusFilter = "ALL" | Job["status"];
+type StatusFilter = "ALL" | $Enums.JobStatus;
+
 type SortKey = "created" | "customerName" | "status";
 type SortDir = "asc" | "desc";
 
 /* -------------------------------------------------------------------------- */
 /*                                  Helpers                                   */
 /* -------------------------------------------------------------------------- */
-
-// const STATUS_META = {
-//   ACTIVE: {
-//     dot: "bg-emerald-500",
-//     pill: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20",
-//     bar: "bg-gradient-to-r from-emerald-500/70 to-emerald-400/40",
-//     icon: <CirclePlay className="h-3.5 w-3.5" />,
-//   },
-//   PAUSED: {
-//     dot: "bg-amber-500",
-//     pill: "bg-amber-500/10 text-amber-600 ring-amber-500/20",
-//     bar: "bg-gradient-to-r from-amber-500/70 to-amber-400/40",
-//     icon: <CirclePause className="h-3.5 w-3.5" />,
-//   },
-//   MANUAL: {
-//     dot: "bg-sky-500",
-//     pill: "bg-sky-500/10 text-sky-700 ring-sky-500/20",
-//     bar: "bg-gradient-to-r from-sky-500/70 to-sky-400/40",
-//     icon: <Wrench className="h-3.5 w-3.5" />,
-//   },
-//   DONE: {
-//     dot: "bg-muted-foreground/60",
-//     pill: "bg-muted text-muted-foreground ring-muted/10",
-//     bar: "bg-muted",
-//     icon: <BadgeCheck className="h-3.5 w-3.5" />,
-//   },
-// } as const;
-
-// function StatusPill({ status }: { status: Job["status"] }) {
-//   const meta = STATUS_META[status];
-//   return (
-//     <Badge
-//       variant="outline"
-//       className={`inline-flex items-center gap-1.5 border-0 ring-1 ${meta.pill}`}
-//     >
-//       {meta.icon}
-//       <span className="text-[11px] font-medium tracking-wide">{status}</span>
-//     </Badge>
-//   );
-// }
-
-// function Meta({
-//   icon,
-//   children,
-//   title,
-// }: {
-//   icon: React.ReactNode;
-//   children: React.ReactNode;
-//   title: string;
-// }) {
-//   return (
-//     <div
-//       className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
-//       title={title}
-//     >
-//       <span className="opacity-70">{icon}</span>
-//       <span className="truncate">{children}</span>
-//     </div>
-//   );
-// }
-
-function fmtHMSfromMs(ms: number) {
-  const sec = Math.floor(ms / 1000);
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
-}
-
-function liveTotalMs(job: JobRow) {
-  if (job.status === "ACTIVE" && job.startedAt) {
-    const start = new Date(job.startedAt).getTime();
-    return job.totalMs + Math.max(0, Date.now() - start);
-  }
-  return job.totalMs;
-}
 
 function TotalCell({ job }: { job: JobRow }) {
   const [, setTick] = React.useState(0);
@@ -174,18 +94,12 @@ function TotalCell({ job }: { job: JobRow }) {
     const id = setInterval(() => setTick((n) => n + 1), 1000);
     return () => clearInterval(id);
   }, [job.status, job.startedAt]);
-  return (
-    <div className="text-right font-mono">{fmtHMSfromMs(liveTotalMs(job))}</div>
-  );
+  return <div className="text-right font-mono">{fmtHMS(liveTotalMs(job))}</div>;
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                  Component                                 */
-/* -------------------------------------------------------------------------- */
 
 export default function JobListClient({ initialJobs }: JobListClientProps) {
-  const router = useRouter();
-
   const [jobs, setJobs] = useState<Job[]>(initialJobs);
   const [deletingJobId, setDeletingJobId] = useState<number | null>(null);
   const [query, setQuery] = useState("");
@@ -197,10 +111,9 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
   const counts = useMemo(() => {
     const active = jobs.filter((j) => j.status === "ACTIVE").length;
     const paused = jobs.filter((j) => j.status === "PAUSED").length;
-    const manual = jobs.filter((j) => j.status === "MANUAL").length;
     const done = jobs.filter((j) => j.status === "DONE").length;
     const totalMs = jobs.reduce((acc, j) => acc + j.totalMs, 0);
-    return { total: jobs.length, active, paused, manual, done, totalMs };
+    return { total: jobs.length, active, paused, done, totalMs };
   }, [jobs]);
 
   const filteredSorted = useMemo(() => {
@@ -214,7 +127,7 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
         (j) =>
           j.customerName.toLowerCase().includes(q) ||
           (j.description?.toLowerCase().includes(q) ?? false) ||
-          (j.jobNumber?.toString().includes(q) ?? false)
+          (j.jobNumber !== null && j.jobNumber.toString().includes(q))
       );
     }
 
@@ -299,7 +212,6 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
           <StatChip label="Total" value={counts.total} tone="muted" />
           <StatChip label="Active" value={counts.active} tone="emerald" />
           <StatChip label="Paused" value={counts.paused} tone="amber" />
-          <StatChip label="Manual" value={counts.manual} tone="sky" />
           <StatChip
             label="Total Hours"
             value={convertToHours(counts.totalMs) || 0}
@@ -346,9 +258,7 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
                 <TabsTrigger value="PAUSED" className="rounded-full">
                   Paused
                 </TabsTrigger>
-                <TabsTrigger value="MANUAL" className="rounded-full">
-                  Manual
-                </TabsTrigger>
+
                 <TabsTrigger value="DONE" className="rounded-full">
                   Done
                 </TabsTrigger>
@@ -516,185 +426,5 @@ function EmptyState() {
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function JobCard({
-  job,
-  deleting,
-  isPending,
-  onDelete,
-}: {
-  job: Job;
-  deleting: boolean;
-  isPending: boolean;
-  onDelete: () => void;
-}) {
-  const meta = STATUS_META[job.status];
-
-  return (
-    <motion.div
-      initial={{ y: 0, opacity: 1 }}
-      whileHover={{ y: -3 }}
-      transition={{ type: "spring", stiffness: 260, damping: 20 }}
-    >
-      <div
-        className={`
-          relative overflow-hidden rounded-2xl border border-border/60 bg-card/80
-          shadow-sm ring-1 ring-border/40 backdrop-blur
-          hover:shadow-md
-        `}
-      >
-        {/* subtle status accent line */}
-        <div className={`absolute inset-x-0 top-0 h-1 ${meta.bar}`} />
-
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            {/* Title / Meta */}
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <Link
-                  href={`/jobs/${job.id}`}
-                  className="text-base font-semibold leading-tight hover:underline"
-                  aria-label={`Open job ${job.customerName}`}
-                >
-                  {job.customerName}
-                </Link>
-                <StatusPill status={job.status} />
-              </div>
-
-              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
-                <Meta
-                  icon={<Hash className="h-3.5 w-3.5" />}
-                  title="Job number"
-                >
-                  {job.jobNumber ?? (
-                    <span className="italic text-muted-foreground">
-                      No Job #
-                    </span>
-                  )}
-                </Meta>
-                <Meta icon={<User2 className="h-3.5 w-3.5" />} title="Customer">
-                  {job.customerName}
-                </Meta>
-              </div>
-            </div>
-
-            {/* Right cluster: time + menu */}
-            <div className="flex items-start gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="outline" className="font-mono text-[11px]">
-                      <Clock className="mr-1 h-3.5 w-3.5" />
-                      <TotalCell job={job as JobRow} />
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent side="left">Live elapsed time</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
-                    aria-label="Open actions"
-                  >
-                    <EllipsisVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={`/jobs/${job.id}`}
-                      className="flex items-center gap-2"
-                    >
-                      <Clock className="h-4 w-4" />
-                      View
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={`/jobs/${job.id}/edit`}
-                      className="flex items-center gap-2"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Edit
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        disabled={deleting || isPending}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete job</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Delete “{job.customerName}”? This also removes all
-                          associated time sessions.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={onDelete}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-
-          {/* Description */}
-          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-            {job.description || <span className="italic">No description</span>}
-          </p>
-
-          {/* Footer */}
-          <div className="mt-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span
-                className={`inline-block size-2 rounded-full ${meta.dot}`}
-              />
-              <span className="text-xs text-muted-foreground">Status</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="font-mono text-[11px]">
-                {convertToHours(job.totalMs) || 0}h
-              </Badge>
-
-              <Button
-                asChild
-                size="sm"
-                className="
-                  rounded-full px-3
-                  bg-gradient-to-r from-primary/90 to-primary/70 text-primary-foreground
-                  hover:opacity-95
-                "
-              >
-                <Link href={`/jobs/${job.id}`}>Open</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
   );
 }
