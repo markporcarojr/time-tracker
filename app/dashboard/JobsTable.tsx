@@ -52,8 +52,7 @@ import {
   VisibilityState,
 } from "@tanstack/react-table";
 
-import type { RowData } from "@tanstack/table-core"; // keep only RowData
-
+import type { RowData } from "@tanstack/table-core";
 import { z } from "zod";
 
 import { Badge } from "@/components/ui/badge";
@@ -110,12 +109,13 @@ import {
   IconEdit,
 } from "@tabler/icons-react";
 
-/* ---------- Table meta typing so cells can call removeRow/invalidate ---------- */
+/* ---------- Table meta typing so cells can call helpers ---------- */
 declare module "@tanstack/table-core" {
-  // underscore to satisfy no-unused-vars for generics
   interface TableMeta<_TData extends RowData> {
     removeRow?: (id: number) => void;
     invalidate?: () => void;
+    /** NEW: immutable per-row updater to force re-render */
+    updateRow?: (id: number, patch: Partial<JobRow>) => void;
   }
 }
 
@@ -179,7 +179,6 @@ function TotalCell({ job }: { job: JobRow }) {
 
 /* --------------- DnD: pass handle props via context -------------- */
 
-// Use React types so we don't depend on dnd-kit internal type exports
 type HandleBindings = {
   attributes: React.HTMLAttributes<HTMLButtonElement>;
   listeners: React.DOMAttributes<HTMLButtonElement>;
@@ -470,7 +469,6 @@ function JobDrawer({
 
 /* ---------------- table columns ---------------- */
 
-// Radix Checkbox can return "indeterminate"
 type Checked = boolean | "indeterminate";
 
 export const columns: ColumnDef<JobRow>[] = [
@@ -523,8 +521,8 @@ export const columns: ColumnDef<JobRow>[] = [
           <JobDrawer
             job={job}
             onPatched={(next) => {
-              Object.assign(job, next); // optimistic row update
-              table.options.meta?.invalidate?.(); // force a rerender
+              // IMPORTANT: immutable replace so TanStack Table re-renders
+              table.options.meta?.updateRow?.(job.id, next);
             }}
           />
           {job.description ? (
@@ -536,7 +534,6 @@ export const columns: ColumnDef<JobRow>[] = [
       );
     },
   },
-
   {
     id: "jobNumber",
     header: "Job #",
@@ -659,7 +656,6 @@ function DraggableRow({ row }: { row: Row<JobRow> }) {
     listeners,
   } = useSortable({ id: row.original.id });
 
-  // Cast dnd-kit bindings to React handler/attribute types for our Button
   const handleBindings: HandleBindings = {
     attributes: attributes as React.HTMLAttributes<HTMLButtonElement>,
     listeners: (listeners ?? {}) as React.DOMAttributes<HTMLButtonElement>,
@@ -738,6 +734,11 @@ export function JobsTable({ data: initialData }: { data: JobRow[] }) {
       removeRow: (id: number) =>
         setData((prev) => prev.filter((r) => r.id !== id)),
       invalidate: () => setData((prev) => [...prev]),
+      /** NEW: immutable row replacement so cells re-render */
+      updateRow: (id: number, patch: Partial<JobRow>) =>
+        setData((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, ...patch } : r))
+        ),
     },
   });
 

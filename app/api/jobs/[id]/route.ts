@@ -39,7 +39,7 @@ export async function GET(
 }
 
 type PatchBody = {
-  name?: string;
+  customerName?: string;
   description?: string;
   addMinutes?: number;
   resetTotal?: boolean;
@@ -70,11 +70,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
 
   // Start composing the update
-  const data: any = {};
+  const data: {
+    customerName?: string;
+    description?: string;
+    startedAt?: Date | null;
+    stoppedAt?: Date | null;
+    status?: "ACTIVE" | "PAUSED" | "DONE";
+    totalMs?: number;
+  } = {};
   const now = new Date();
 
-  // Name / description
-  if (typeof body.name === "string") data.name = body.name;
+  // Customer name / description
+  if (typeof body.customerName === "string")
+    data.customerName = body.customerName;
   if (body.description !== undefined) data.description = body.description;
 
   // Manual minutes

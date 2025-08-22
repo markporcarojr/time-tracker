@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       jobNumber,
       customerName,
       description,
-      status: status ?? "ACTIVE",
+      status: status ?? "PAUSED",
     },
     select: { id: true },
   });

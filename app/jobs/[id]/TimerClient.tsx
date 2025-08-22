@@ -22,6 +22,7 @@ export function fmtHMS(totalSeconds: number) {
 export default function TimerClient(props: {
   jobId: number;
   customerName: string;
+  jobNumber: number | null;
   description?: string | null;
   totalMs: number;
   startedAtISO: string | null;
@@ -132,7 +133,7 @@ export default function TimerClient(props: {
         <div>
           <CardTitle className="flex items-center gap-2">
             <TimerIcon className="h-5 w-5 text-primary" />
-            <span>{props.name}</span>
+            <span>{props.customerName}</span>
           </CardTitle>
           {props.description ? (
             <p className="text-sm text-muted-foreground mt-1">

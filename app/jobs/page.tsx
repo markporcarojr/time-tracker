@@ -15,26 +15,19 @@ export default async function JobListPage() {
     orderBy: { startedAt: "desc" },
     select: {
       id: true,
-      jobNumber: true,
       customerName: true,
+      jobNumber: true,
       description: true,
       status: true,
+      startedAt: true,
+      stoppedAt: true,
       totalMs: true,
+      userId: true,
     },
   });
 
   return (
     <div className="mx-auto max-w-4xl p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Jobs</h1>
-        <Link
-          href="/jobs/new"
-          className="inline-flex items-center rounded-hard bg-primary px-4 py-2 text-primary-foreground shadow-hard hover:opacity-90"
-        >
-          + Add Job
-        </Link>
-      </div>
-
       <JobListClient initialJobs={jobs} />
     </div>
   );
