@@ -620,7 +620,10 @@ export const columns: ColumnDef<JobRow>[] = [
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                <DropdownMenuItem
+                  onSelect={(e) => e.preventDefault()} //
+                  className="text-destructive focus:text-destructive"
+                >
                   Delete
                 </DropdownMenuItem>
               </AlertDialogTrigger>

@@ -19,5 +19,5 @@ export const navMain: NavLink[] = [
 ];
 
 export const navSecondary: NavLink[] = [
-  { title: "Settings", url: "/settings", icon: IconSettings },
+  { title: "Settings", url: "#", icon: IconSettings },
 ];

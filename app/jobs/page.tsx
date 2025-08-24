@@ -1,6 +1,5 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import Link from "next/link";
 import JobListClient from "./job-list-client";
 
 export default async function JobListPage() {

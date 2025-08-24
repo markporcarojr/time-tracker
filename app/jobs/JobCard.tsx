@@ -242,6 +242,7 @@ export default function JobCard({
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()} //
                         className="text-destructive focus:text-destructive"
                         disabled={deleting || isPending}
                       >
@@ -254,7 +255,7 @@ export default function JobCard({
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete job</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Delete “{job.customerName}”? This will also remove all
+                          Delete “{job.jobNumber}”? This will also remove all
                           associated time sessions.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
