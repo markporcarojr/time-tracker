@@ -1,27 +1,19 @@
 // components/nav-user.tsx
 "use client";
 
-import * as React from "react";
 import {
   SignedIn,
   SignedOut,
   SignInButton,
-  useUser,
   useClerk,
+  useUser,
 } from "@clerk/nextjs";
-import {
-  IconCreditCard,
-  IconDotsVertical,
-  IconLogout,
-  IconNotification,
-  IconUserCircle,
-} from "@tabler/icons-react";
+import { IconDotsVertical, IconLogout } from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -116,28 +108,11 @@ export function NavUser() {
 
               <DropdownMenuSeparator />
 
-              {/* <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <IconUserCircle />
-                  Account
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <IconCreditCard />
-                  Billing
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <IconNotification />
-                  Notifications
-                </DropdownMenuItem>
-              </DropdownMenuGroup> */}
-
-              {/* <DropdownMenuSeparator /> */}
-
               {/* Use onSelect to avoid Radix child composition issues */}
               <DropdownMenuItem
                 onSelect={(e) => {
                   e.preventDefault();
-                  void signOut({ redirectUrl: "/sign-in" });
+                  void signOut({ redirectUrl: "/" });
                 }}
               >
                 <IconLogout />

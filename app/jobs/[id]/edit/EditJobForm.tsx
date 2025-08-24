@@ -70,17 +70,43 @@ export default function EditJobForm({ job }: { job: Job }) {
   };
 
   const resetTotal = async () => {
-    if (!confirm("Reset total time to 0 and stop the timer?")) return;
-    setResetting(true);
-    const res = await fetch(`/api/jobs/${job.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resetTotal: true, status: "PAUSED" }),
-    });
-    setResetting(false);
-    if (!res.ok) return toast.error("Failed to reset total");
-    toast.success("Total reset to 0");
-    router.refresh();
+    toast(() => (
+      <div className="flex flex-col gap-3">
+        <span>Reset total time to 0 and stop the timer?</span>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={() => toast.dismiss()} // cancel
+            className="px-3 py-1 text-sm rounded-md border border-border hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              toast.dismiss();
+
+              const promise = fetch(`/api/jobs/${job.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ resetTotal: true, status: "PAUSED" }),
+              });
+
+              toast.promise(promise, {
+                loading: "Resetting total…",
+                success: async (res) => {
+                  if (!res.ok) throw new Error("Failed to reset total");
+                  router.refresh();
+                  return "Total reset to 0";
+                },
+                error: "Failed to reset total",
+              });
+            }}
+            className="px-3 py-1 text-sm rounded-md bg-red-600 text-white hover:bg-red-700"
+          >
+            Yes, reset
+          </button>
+        </div>
+      </div>
+    ));
   };
 
   return (

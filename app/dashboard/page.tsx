@@ -7,13 +7,23 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 // ⬅️ Make sure this path matches where you put the table component I gave you
 import { JobsTable, type JobRow } from "./JobsTable";
+import { toast } from "sonner";
 
 export default async function Page() {
-  const { userId } = await auth();
-  if (!userId) return <div className="p-6">Unauthorized</div>;
+  let user;
+  try {
+    const { userId } = await auth();
+    if (!userId) return <div className="p-6">Unauthorized</div>;
 
-  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
-  if (!user) return <div className="p-6">No user</div>;
+    user = await prisma.user.findUnique({ where: { clerkId: userId } });
+    if (!user) return <div className="p-6">No user</div>;
+  } catch (error) {
+    return (
+      <div className="p-6">
+        {toast.error(error instanceof Error ? error.message : "Unknown error")}
+      </div>
+    );
+  }
 
   const jobs = await prisma.job.findMany({
     where: { userId: user.id },

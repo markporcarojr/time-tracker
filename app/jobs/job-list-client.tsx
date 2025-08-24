@@ -1,35 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import * as React from "react";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import StatusPill from "./StatusPill";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -41,34 +18,15 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import Meta from "./Meta";
 
-import {
-  ArrowUpDown,
-  Clock,
-  EllipsisVertical,
-  Filter,
-  Hash,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  User2,
-} from "lucide-react";
+import { ArrowUpDown, Filter, Plus, Search } from "lucide-react";
 
-import { convertToHours } from "@/lib/msToHours";
-import { JobRow } from "../dashboard/JobsTable";
-import { STATUS_META } from "@/data/statusMeta";
 import { fmtHMS } from "@/lib/format";
+import { convertToHours } from "@/lib/msToHours";
 import { liveTotalMs } from "@/lib/utils";
+import type { $Enums, Job } from "@prisma/client";
+import { JobRow } from "../dashboard/JobsTable";
 import JobCard from "./JobCard";
-import type { Job, $Enums } from "@prisma/client";
 
 /* -------------------------------------------------------------------------- */
 /*                                   Types                                    */

@@ -22,7 +22,7 @@ type LogoutButtonProps = {
 };
 
 export function LogoutButton({
-  redirectUrl = "/sign-in",
+  redirectUrl = "/",
   variant = "button",
   className,
   children,

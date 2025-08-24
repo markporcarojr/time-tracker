@@ -1,41 +1,36 @@
 // app/jobs/[id]/TimerClient.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Play, Pause, Timer as TimerIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, fmtHMS } from "@/lib/utils";
+import type { $Enums } from "@prisma/client";
+import { Play, Square, Timer as TimerIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
-type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
-
-export function fmtHMS(totalSeconds: number) {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
-}
+type JobStatus = $Enums.JobStatus;
 
 export default function TimerClient(props: {
   jobId: number;
-  customerName: string;
-  jobNumber: number | null;
-  description?: string | null;
-  totalMs: number;
-  startedAtISO: string | null;
+  jobNumber: number;
   status: JobStatus;
+  totalMs: number;
+  startedAtISO?: string | null;
+  customerName: string;
+  description?: string | null;
 }) {
   const router = useRouter();
+
   const [status, setStatus] = useState<JobStatus>(props.status);
   const [baseMs, setBaseMs] = useState<number>(props.totalMs);
   const [startedAt, setStartedAt] = useState<number | null>(
     props.startedAtISO ? new Date(props.startedAtISO).getTime() : null
   );
 
-  // Tick every second to display live time
+  // live display seconds (base + (now - startedAt) when ACTIVE)
   const [displaySec, setDisplaySec] = useState<number>(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -54,7 +49,7 @@ export default function TimerClient(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseMs, startedAt]);
 
-  // Light polling to sync if another tab/page changes it
+  // light polling to catch changes from other tabs
   useEffect(() => {
     const id = setInterval(async () => {
       const res = await fetch(`/api/jobs/${props.jobId}`, {
@@ -69,50 +64,44 @@ export default function TimerClient(props: {
     return () => clearInterval(id);
   }, [props.jobId]);
 
+  // Start => PATCH { status: "ACTIVE" } (server sets startedAt)
   const start = async () => {
-    // Send current time as startedAt
-    const startedAtISO = new Date().toISOString();
-    const res = await fetch(`/api/jobs/${props.jobId}/start`, {
-      method: "POST",
+    const res = await fetch(`/api/jobs/${props.jobId}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startedAt: startedAtISO }),
+      body: JSON.stringify({ status: "ACTIVE" }),
     });
     if (res.ok) {
-      setStatus("ACTIVE");
-      setStartedAt(Date.now());
+      const { job } = await res.json();
+      setStatus(job.status); // "ACTIVE"
+      setBaseMs(job.totalMs);
+      setStartedAt(
+        job.startedAt ? new Date(job.startedAt).getTime() : Date.now()
+      );
       router.refresh();
     }
   };
 
-  const pause = async () => {
-    // First, check if the job has a startedAt in the DB
-    const resCheck = await fetch(`/api/jobs/${props.jobId}`, {
-      cache: "no-store",
-    });
-    if (resCheck.ok) {
-      const { job } = await resCheck.json();
-      if (!job.startedAt) {
-        // If startedAt is null, start the job instead and send current time
-        await start();
-        return;
-      }
-    }
-    // Otherwise, proceed to pause
-    const res = await fetch(`/api/jobs/${props.jobId}/pause`, {
-      method: "POST",
+  // Stop => PATCH { status: "PAUSED" } (server accumulates totalMs, clears startedAt)
+  const stop = async () => {
+    const res = await fetch(`/api/jobs/${props.jobId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "PAUSED" }),
     });
     if (res.ok) {
-      const json = await res.json();
-      setStatus("PAUSED");
-      setStartedAt(json?.startedAt ? new Date(json.startedAt).getTime() : null);
-      if (typeof json?.totalMs === "number") setBaseMs(json.totalMs);
+      const { job } = await res.json();
+      setStatus(job.status); // "PAUSED"
+      setBaseMs(job.totalMs);
+      setStartedAt(job.startedAt ? new Date(job.startedAt).getTime() : null);
       router.refresh();
     }
   };
 
+  // direct status change via badges (ACTIVE/PAUSED/DONE)
   const setStatusOnly = async (s: JobStatus) => {
-    const res = await fetch(`/api/jobs/${props.jobId}/status`, {
-      method: "POST",
+    const res = await fetch(`/api/jobs/${props.jobId}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: s }),
     });
@@ -128,64 +117,82 @@ export default function TimerClient(props: {
   const running = status === "ACTIVE";
 
   return (
-    <Card className="shadow-plate border-border">
-      <CardHeader className="flex flex-row items-start justify-between gap-4">
-        <div>
+    <Card
+      className={cn(
+        "group relative overflow-hidden rounded-2xl border border-border bg-card/80 ring-1 ring-border/40 backdrop-blur shadow-plate transition-transform duration-200 hover:-translate-y-[2px] hover:shadow-md"
+      )}
+    >
+      {/* status bar */}
+      {/*  s */}
+
+      {/* soft grid */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, var(--tw-ring) 1px, transparent 1px), linear-gradient(to bottom, var(--tw-ring) 1px, transparent 1px)",
+          backgroundSize: "20px 20px",
+          // @ts-ignore
+          "--tw-ring": "hsl(var(--border))",
+        }}
+      />
+
+      {/* shine */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-40 top-0 h-full w-40 -translate-x-[120%] rotate-12 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition duration-700 group-hover:translate-x-[220%] group-hover:opacity-100"
+      />
+
+      <CardHeader className="relative z-[1] flex flex-row items-start justify-between gap-4">
+        <div className="min-w-0">
           <CardTitle className="flex items-center gap-2">
-            <TimerIcon className="h-5 w-5 text-primary" />
-            <span>{props.customerName}</span>
+            <span className="truncate">{props.customerName.toUpperCase()}</span>
           </CardTitle>
+          <div>{props.jobNumber}</div>
+        </div>
+        <div>
           {props.description ? (
-            <p className="text-sm text-muted-foreground mt-1">
-              {props.description}
+            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+              {props.description.toUpperCase()}
             </p>
           ) : null}
         </div>
 
-        <div className="flex gap-1.5">
-          {(["ACTIVE", "PAUSED", "DONE"] as JobStatus[]).map((s) => (
-            <Badge
-              key={s}
-              role="button"
-              onClick={() => setStatusOnly(s)}
-              variant={status === s ? "default" : "secondary"}
-              className={cn(
-                "cursor-pointer",
-                s === "ACTIVE" && "bg-primary text-primary-foreground",
-                s === "DONE" && "bg-ink text-white"
-              )}
-            >
-              {s}
-            </Badge>
-          ))}
-        </div>
+        {/* status badges?? */}
       </CardHeader>
 
-      <Separator />
+      <Separator className="relative z-[1]" />
 
-      <CardContent className="py-8">
+      <CardContent className="relative z-[1] py-8">
         <div className="text-center">
-          <div className="text-[64px] leading-none font-mono tracking-tight">
-            {fmtHMS(status === "DONE" ? Math.floor(baseMs / 1000) : displaySec)}
+          <div className="font-mono text-[56px] leading-none tracking-tight sm:text-[64px]">
+            {fmtHMS(running ? displaySec : Math.floor(baseMs / 1000))}
           </div>
           <div className="mt-2 text-sm text-muted-foreground">
             Saved total: <strong>{fmtHMS(Math.floor(baseMs / 1000))}</strong>
+            {running ? <span className="ml-2">(live)</span> : null}
           </div>
         </div>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           {!running ? (
-            <Button onClick={start} className="bg-green-600 hover:bg-green-700">
+            <Button
+              onClick={start}
+              className="rounded-full bg-emerald-600 px-5 hover:bg-emerald-700"
+              aria-label="Start timing"
+            >
               <Play className="mr-2 h-4 w-4" />
               Start
             </Button>
           ) : (
             <Button
-              onClick={pause}
-              className="bg-yellow-600 hover:bg-yellow-700"
+              onClick={stop}
+              className="rounded-full bg-red-600 px-5 hover:bg-red-700"
+              aria-label="Stop timing"
             >
-              <Pause className="mr-2 h-4 w-4" />
-              Pause
+              <Square className="mr-2 h-4 w-4" />
+              Stop
             </Button>
           )}
         </div>

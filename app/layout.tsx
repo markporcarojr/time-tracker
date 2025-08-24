@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { checkUser } from "@/lib/auth/checkUser";
+import AppSidebarServer from "@/components/AppSidebarServer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,13 +30,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const u = await checkUser().catch(() => null);
+  // const u = await checkUser().catch(() => null);
 
-  const user = {
-    name: u?.name ?? null,
-    email: u?.email ?? null,
-    clerkId: u?.id, // assuming u is coming from Clerk
-  };
+  // const user = {
+  //   name: u?.name ?? null,
+  //   email: u?.email ?? null,
+  //   clerkId: u?.id, // assuming u is coming from Clerk
+  // };
 
   return (
     <ClerkProvider>
@@ -45,7 +46,7 @@ export default async function RootLayout({
         >
           <Providers>
             <SidebarProvider>
-              <AppSidebar user={user} />
+              <AppSidebarServer />
               <main className="flex-1">{children}</main>
             </SidebarProvider>
             <Toaster position="top-right" />

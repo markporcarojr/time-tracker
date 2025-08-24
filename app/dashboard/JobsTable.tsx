@@ -108,6 +108,7 @@ import {
   IconDeviceFloppy,
   IconEdit,
 } from "@tabler/icons-react";
+import { Plus } from "lucide-react";
 
 /* ---------- Table meta typing so cells can call helpers ---------- */
 declare module "@tanstack/table-core" {
@@ -794,9 +795,18 @@ export function JobsTable({ data: initialData }: { data: JobRow[] }) {
                 ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Link href="/jobs/new">
-            <Button size="sm">New Job</Button>
-          </Link>
+          <Button
+            asChild
+            className="
+              rounded-full px-5 py-5 text-base font-medium
+              bg-gradient-to-r from-primary to-primary/70 text-primary-foreground
+              shadow-sm hover:opacity-95 mb-2            "
+          >
+            <Link href="/jobs/new" aria-label="Create new job">
+              <Plus className="mr-2 h-4 w-4" />
+              New Job
+            </Link>
+          </Button>
         </div>
       </div>
 
