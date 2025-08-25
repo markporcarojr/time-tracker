@@ -38,6 +38,7 @@ import { STATUS_META } from "@/data/statusMeta";
 import Meta from "./Meta";
 import StatusPill from "./StatusPill";
 import { convertToHours } from "@/lib/msToHours";
+import { fmtHMSFromMs } from "@/lib/format";
 
 import {
   Clock,
@@ -52,15 +53,6 @@ import {
 /* -------------------------------------------------------------------------- */
 /*                           Local helpers (no casts)                          */
 /* -------------------------------------------------------------------------- */
-
-function fmtHMS(totalMs: number) {
-  const s = Math.max(0, Math.floor(totalMs / 1000));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(h)}:${pad(m)}:${pad(sec)}`;
-}
 
 /**
  * Live ticker for ACTIVE jobs.
@@ -93,7 +85,7 @@ function LiveTotal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job.status, job.startedAt]);
 
-  return <span className="font-mono">{fmtHMS(ms)}</span>;
+  return <span className="font-mono">{fmtHMSFromMs(ms)}</span>;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -145,7 +137,7 @@ export default function JobCard({
             backgroundImage:
               "linear-gradient(to right, var(--tw-ring) 1px, transparent 1px), linear-gradient(to bottom, var(--tw-ring) 1px, transparent 1px)",
             backgroundSize: "20px 20px",
-            // @ts-ignore
+            // @ts-expect-error CSS custom property assignment
             "--tw-ring": "hsl(var(--border))",
           }}
         />

@@ -1,8 +1,7 @@
-// app/components/AppSidebarServer.tsx
+import { AppSidebar } from "@/components/app-sidebar";
 import { checkUser } from "@/lib/auth/checkUser";
-import AppSidebarClient from "./AppSideBarClient";
 
 export default async function AppSidebarServer() {
   const user = await checkUser();
-  return <AppSidebarClient user={user} />;
+  return <AppSidebar user={user} />;
 }

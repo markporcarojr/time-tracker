@@ -28,7 +28,7 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   user: UserMini;
 };
 
-export function AppSidebar({ user, ...props }: AppSidebarProps) {
+export function AppSidebar({ ...props }: AppSidebarProps) {
   const pathname = usePathname();
 
   const main = navMain.map((item) => ({

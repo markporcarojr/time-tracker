@@ -21,11 +21,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { ArrowUpDown, Filter, Plus, Search } from "lucide-react";
 
-import { fmtHMS } from "@/lib/format";
 import { convertToHours } from "@/lib/msToHours";
-import { liveTotalMs } from "@/lib/utils";
 import type { $Enums, Job } from "@prisma/client";
-import { JobRow } from "../dashboard/JobsTable";
 import JobCard from "./JobCard";
 
 /* -------------------------------------------------------------------------- */
@@ -45,16 +42,6 @@ type SortDir = "asc" | "desc";
 /*                                  Helpers                                   */
 /* -------------------------------------------------------------------------- */
 
-function TotalCell({ job }: { job: JobRow }) {
-  const [, setTick] = React.useState(0);
-  React.useEffect(() => {
-    if (job.status !== "ACTIVE" || !job.startedAt) return;
-    const id = setInterval(() => setTick((n) => n + 1), 1000);
-    return () => clearInterval(id);
-  }, [job.status, job.startedAt]);
-  return <div className="text-right font-mono">{fmtHMS(liveTotalMs(job))}</div>;
-}
-
 /* -------------------------------------------------------------------------- */
 
 export default function JobListClient({ initialJobs }: JobListClientProps) {
@@ -64,7 +51,7 @@ export default function JobListClient({ initialJobs }: JobListClientProps) {
   const [status, setStatus] = useState<StatusFilter>("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("created");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [isPending, startTransition] = useTransition();
+  const [isPending] = useTransition();
 
   const counts = useMemo(() => {
     const active = jobs.filter((j) => j.status === "ACTIVE").length;

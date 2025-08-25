@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     console.log("[WH] event.type:", event.type);
 
     if (event.type === "user.created") {
-      const d: any = event.data;
+      const d = event.data as Record<string, unknown>;
       const email =
         d?.primary_email_address?.email_address ??
         d?.email_addresses?.[0]?.email_address ??
@@ -85,8 +85,8 @@ export async function POST(req: Request) {
     }
 
     return new Response("OK", { status: 200 });
-  } catch (err: any) {
-    console.error("[WH] verify or DB error:", err?.message || err);
+  } catch (err: unknown) {
+    console.error("[WH] verify or DB error:", err instanceof Error ? err.message : err);
     return new Response("Webhook error", { status: 400 });
   }
 }

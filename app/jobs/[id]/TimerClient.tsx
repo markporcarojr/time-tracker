@@ -1,13 +1,13 @@
 // app/jobs/[id]/TimerClient.tsx
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { cn, fmtHMS } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { fmtHMS } from "@/lib/format";
 import type { $Enums } from "@prisma/client";
-import { Play, Square, Timer as TimerIcon } from "lucide-react";
+import { Play, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -98,22 +98,6 @@ export default function TimerClient(props: {
     }
   };
 
-  // direct status change via badges (ACTIVE/PAUSED/DONE)
-  const setStatusOnly = async (s: JobStatus) => {
-    const res = await fetch(`/api/jobs/${props.jobId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: s }),
-    });
-    if (res.ok) {
-      const { job } = await res.json();
-      setStatus(job.status);
-      setBaseMs(job.totalMs);
-      setStartedAt(job.startedAt ? new Date(job.startedAt).getTime() : null);
-      router.refresh();
-    }
-  };
-
   const running = status === "ACTIVE";
 
   return (
@@ -133,7 +117,7 @@ export default function TimerClient(props: {
           backgroundImage:
             "linear-gradient(to right, var(--tw-ring) 1px, transparent 1px), linear-gradient(to bottom, var(--tw-ring) 1px, transparent 1px)",
           backgroundSize: "20px 20px",
-          // @ts-ignore
+          // @ts-expect-error CSS custom property assignment
           "--tw-ring": "hsl(var(--border))",
         }}
       />

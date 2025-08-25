@@ -30,13 +30,7 @@ type Job = {
   startedAt: Date | null;
 };
 
-function fmtHMS(ms: number) {
-  const sec = Math.floor(ms / 1000);
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
-}
+import { fmtHMSFromMs } from "@/lib/format";
 
 export default function EditJobForm({ job }: { job: Job }) {
   const router = useRouter();
@@ -215,7 +209,7 @@ export default function EditJobForm({ job }: { job: Job }) {
 
           <div className="text-sm text-muted-foreground">
             Current saved total:{" "}
-            <span className="font-mono">{fmtHMS(job.totalMs)}</span>
+            <span className="font-mono">{fmtHMSFromMs(job.totalMs)}</span>
             {job.startedAt ? (
               <span className="ml-2">
                 (running since {new Date(job.startedAt).toLocaleString()})
