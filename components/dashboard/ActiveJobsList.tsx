@@ -4,14 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { cn } from "@/lib/utils";
 import { fmtHMS } from "@/lib/format";
-
-type Job = {
-  id: number;
-  customerName: string;
-  description: string | null;
-  status: "ACTIVE" | "PAUSED" | "DONE";
-  totalMilliseconds: number | null;
-};
+import { Job } from "@/types/prisma";
 
 export function ActiveJobsList({ jobs }: { jobs: Job[] }) {
   return (
@@ -30,7 +23,7 @@ export function ActiveJobsList({ jobs }: { jobs: Job[] }) {
         ) : (
           <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {jobs.map((job) => {
-              const savedSec = Math.floor((job.totalMilliseconds ?? 0) / 1000);
+              const savedSec = Math.floor((job.totalMs ?? 0) / 1000);
               return (
                 <li key={job.id}>
                   <Link
@@ -40,7 +33,7 @@ export function ActiveJobsList({ jobs }: { jobs: Job[] }) {
                     )}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="font-medium">{job.name}</div>
+                      <div className="font-medium">{job.customerName}</div>
                       <StatusBadge status={job.status} />
                     </div>
                     {job.description ? (

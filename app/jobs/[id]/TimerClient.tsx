@@ -6,12 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { fmtHMS } from "@/lib/format";
-import type { $Enums } from "@prisma/client";
+import type { JobStatus } from "@/types/prisma";
 import { Play, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-
-type JobStatus = $Enums.JobStatus;
 
 export default function TimerClient(props: {
   jobId: number;

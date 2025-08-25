@@ -37,9 +37,8 @@ export async function POST(req: Request) {
     console.log("[WH] event.type:", event.type);
 
     if (event.type === "user.created") {
-      const d = event.data as Record<string, unknown>;
+      const d = event.data;
       const email =
-        d?.primary_email_address?.email_address ??
         d?.email_addresses?.[0]?.email_address ??
         null;
       const name =

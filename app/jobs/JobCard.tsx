@@ -33,7 +33,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Job, $Enums } from "@prisma/client";
+import { Job } from "@/types/prisma";
 import { STATUS_META } from "@/data/statusMeta";
 import Meta from "./Meta";
 import StatusPill from "./StatusPill";
@@ -103,7 +103,7 @@ export default function JobCard({
   isPending: boolean;
   onDelete: () => void;
 }) {
-  const meta = STATUS_META[job.status as $Enums.JobStatus];
+  const meta = STATUS_META[job.status];
 
   return (
     <motion.div

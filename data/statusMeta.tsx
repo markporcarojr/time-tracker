@@ -1,4 +1,4 @@
-import { CirclePlay, CirclePause, Wrench, BadgeCheck } from "lucide-react";
+import { CirclePlay, CirclePause, BadgeCheck } from "lucide-react";
 
 export const STATUS_META = {
   ACTIVE: {
@@ -12,12 +12,6 @@ export const STATUS_META = {
     pill: "bg-amber-500/10 text-amber-600 ring-amber-500/20",
     bar: "bg-gradient-to-r from-amber-500/70 to-amber-400/40",
     icon: <CirclePause className="h-3.5 w-3.5" />,
-  },
-  MANUAL: {
-    dot: "bg-sky-500",
-    pill: "bg-sky-500/10 text-sky-700 ring-sky-500/20",
-    bar: "bg-gradient-to-r from-sky-500/70 to-sky-400/40",
-    icon: <Wrench className="h-3.5 w-3.5" />,
   },
   DONE: {
     dot: "bg-muted-foreground/60",

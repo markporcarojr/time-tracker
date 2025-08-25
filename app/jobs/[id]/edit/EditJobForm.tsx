@@ -19,18 +19,8 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-
-type Job = {
-  id: number;
-  jobNumber: number | null;
-  customerName: string;
-  description: string | null;
-  status: "ACTIVE" | "PAUSED" | "DONE";
-  totalMs: number;
-  startedAt: Date | null;
-};
-
 import { fmtHMSFromMs } from "@/lib/format";
+import { Job } from "@/types/prisma";
 
 export default function EditJobForm({ job }: { job: Job }) {
   const router = useRouter();

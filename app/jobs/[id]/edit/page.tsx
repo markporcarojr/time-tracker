@@ -6,7 +6,7 @@ import EditJobForm from "./EditJobForm";
 export default async function EditJobPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const { userId } = await auth();
   if (!userId) return <div className="p-6">Unauthorized</div>;
@@ -14,7 +14,8 @@ export default async function EditJobPage({
   const user = await prisma.user.findUnique({ where: { clerkId: userId } });
   if (!user) return <div className="p-6">No user</div>;
 
-  const id = Number(params.id);
+  const { id: idParam } = await params;
+  const id = Number(idParam);
   const job = await prisma.job.findFirst({
     where: { id, userId: user.id },
     select: {

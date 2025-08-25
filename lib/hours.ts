@@ -32,7 +32,7 @@ async function sumMinutes(from: Date, userId: number) {
 }
 
 export async function getHoursForUser() {
-  const { userId: clerkId } = auth();
+  const { userId: clerkId } = await auth();
   if (!clerkId) return null;
 
   const user = await prisma.user.findUnique({ where: { clerkId } });
