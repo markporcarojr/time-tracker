@@ -45,7 +45,7 @@ export default function NewJobPage() {
               <label className="text-sm">Customer Name</label>
               <input
                 className="mt-1 w-full rounded-hard border border-border bg-background p-2"
-                placeholder="Bristol Man., Merssino, etc... "
+                placeholder="Bristol, Mersino, etc... "
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 required

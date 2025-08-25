@@ -164,7 +164,6 @@ export default function JobCard({
                 >
                   {job.customerName}
                 </Link>
-                <StatusPill status={job.status} />
               </div>
 
               <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -288,26 +287,7 @@ export default function JobCard({
 
           {/* Footer */}
           <div className="mt-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span
-                className={`inline-block size-2 rounded-full ${meta.dot}`}
-              />
-              <span className="text-xs text-muted-foreground">Status</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="font-mono text-[11px]">
-                {convertToHours(job.totalMs) || 0}h
-              </Badge>
-
-              <Button
-                asChild
-                size="sm"
-                className="rounded-full px-3 bg-gradient-to-r from-primary/90 to-primary/70 text-primary-foreground hover:opacity-95"
-              >
-                <Link href={`/jobs/${job.id}`}>Open</Link>
-              </Button>
-            </div>
+            <StatusPill status={job.status} />
           </div>
         </div>
       </div>

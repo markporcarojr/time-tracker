@@ -1,9 +1,9 @@
 // app/components/AppSidebarClient.tsx
 "use client";
 
-import * as React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/NavUser";
 import {
   Sidebar,
   SidebarContent,
@@ -13,11 +13,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { IconInnerShadowTop } from "@tabler/icons-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { navMain, navSecondary } from "../data/navData";
-import { NavMain } from "@/components/nav-main";
-import { NavSecondary } from "@/components/nav-secondary";
-import { NavUser } from "@/components/NavUser";
 
 export default function AppSidebarClient() {
   const pathname = usePathname();
@@ -41,22 +40,26 @@ export default function AppSidebarClient() {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <Link href="/">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">
-                  CNC Time Tracker
-                </span>
+              <Link href="/" className="flex items-center gap-2">
+                <div className="bg-white p-0.5 rounded">
+                  <Image
+                    src="/RC_LOGO.png"
+                    alt="Logo"
+                    width={20}
+                    height={20}
+                    className="h-5 w-5 object-contain"
+                  />
+                </div>
+                <span className="text-base font-semibold">Time Tracker</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-
       <SidebarContent>
         <NavMain items={main} />
         <NavSecondary items={secondary} className="mt-auto" />
       </SidebarContent>
-
       <SidebarFooter>
         <NavUser />
       </SidebarFooter>

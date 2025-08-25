@@ -109,6 +109,7 @@ import {
   IconEdit,
 } from "@tabler/icons-react";
 import { Plus } from "lucide-react";
+import { $Enums } from "@prisma/client";
 
 /* ---------- Table meta typing so cells can call helpers ---------- */
 declare module "@tanstack/table-core" {
@@ -122,19 +123,7 @@ declare module "@tanstack/table-core" {
 
 /* ---------------- Types & Schema ---------------- */
 
-type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
-
-export const jobSchema = z.object({
-  id: z.number(),
-  customerName: z.string(),
-  jobNumber: z.number().int().nullable(),
-  description: z.string().nullable(),
-  status: z.enum(["ACTIVE", "PAUSED", "DONE"]),
-  startedAt: z.iso.datetime().nullable(),
-  stoppedAt: z.iso.datetime().nullable(),
-  totalMs: z.number(),
-  userId: z.number(),
-});
+type JobStatus = $Enums.JobStatus;
 
 export type JobRow = {
   id: number;
@@ -553,23 +542,8 @@ export const columns: ColumnDef<JobRow>[] = [
     },
   },
   {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const s = row.original.status;
-      return (
-        <Badge variant={s === "ACTIVE" ? "default" : "secondary"}>
-          {s === "DONE" ? (
-            <IconCircleCheckFilled className="mr-1 size-4" />
-          ) : null}
-          {s}
-        </Badge>
-      );
-    },
-  },
-  {
     id: "total",
-    header: () => <div className="w-full text-right">Total</div>,
+    header: () => <div className="w-full text-right">Total Hrs</div>,
     cell: ({ row }) => <TotalCell job={row.original} />,
   },
   {
@@ -621,8 +595,8 @@ export const columns: ColumnDef<JobRow>[] = [
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <DropdownMenuItem
-                  onSelect={(e) => e.preventDefault()} //
-                  className="text-destructive focus:text-destructive"
+                  onSelect={(e) => e.preventDefault()}
+                  className="bg-red-600 text-white hover:bg-red-700 focus:bg-red-700 focus:text-white"
                 >
                   Delete
                 </DropdownMenuItem>
@@ -769,7 +743,7 @@ export function JobsTable({ data: initialData }: { data: JobRow[] }) {
           {table.getFilteredRowModel().rows.length} job(s)
         </div>
         <div className="flex items-center gap-2">
-          <DropdownMenu>
+          {/* <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 Columns
@@ -797,7 +771,7 @@ export function JobsTable({ data: initialData }: { data: JobRow[] }) {
                   </DropdownMenuCheckboxItem>
                 ))}
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> */}
           <Button
             asChild
             className="

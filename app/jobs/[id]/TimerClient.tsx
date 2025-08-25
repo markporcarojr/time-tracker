@@ -1,15 +1,28 @@
 // app/jobs/[id]/TimerClient.tsx
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialogFooter,
+  AlertDialogHeader,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn, fmtHMS } from "@/lib/utils";
 import type { $Enums } from "@prisma/client";
-import { Play, Square, Timer as TimerIcon } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@radix-ui/react-alert-dialog";
+import { Play, Square } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 type JobStatus = $Enums.JobStatus;
 
@@ -98,6 +111,30 @@ export default function TimerClient(props: {
     }
   };
 
+  const doDelete = async () => {
+    try {
+      const p = fetch(`/api/jobs/${props.jobId}`, { method: "DELETE" }).then(
+        async (res) => {
+          if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || "Delete failed");
+          }
+        }
+      );
+
+      toast.promise(p, {
+        loading: "Deleting…",
+        success: "Job deleted",
+        error: (err: unknown) =>
+          err instanceof Error ? err.message : "Delete failed",
+      });
+
+      router.refresh();
+    } catch (err) {
+      // error handled by toast.promise
+    }
+  };
+
   // direct status change via badges (ACTIVE/PAUSED/DONE)
   const setStatusOnly = async (s: JobStatus) => {
     const res = await fetch(`/api/jobs/${props.jobId}`, {
@@ -123,7 +160,6 @@ export default function TimerClient(props: {
       )}
     >
       {/* status bar */}
-      {/*  s */}
 
       {/* soft grid */}
       <div
@@ -175,7 +211,15 @@ export default function TimerClient(props: {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <div className="mt-8 flex flex-wrap justify-between gap-3">
+          <Button
+            onClick={start}
+            className="rounded-full bg-emerald-600 px-5 hover:bg-emerald-700"
+            aria-label="Start timing"
+          >
+            <Play className="mr-2 h-4 w-4" />
+            Start
+          </Button>
           {!running ? (
             <Button
               onClick={start}
@@ -195,6 +239,29 @@ export default function TimerClient(props: {
               Stop
             </Button>
           )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                className="rounded-full px-5"
+                aria-label="Delete job"
+              >
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete “{props.jobNumber}”?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently remove the job and all timing data.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={doDelete}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </CardContent>
     </Card>
