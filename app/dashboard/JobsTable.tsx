@@ -52,7 +52,6 @@ import {
   VisibilityState,
 } from "@tanstack/react-table";
 
-import type { RowData } from "@tanstack/table-core";
 import { z } from "zod";
 
 import { Badge } from "@/components/ui/badge";
@@ -110,19 +109,9 @@ import {
 } from "@tabler/icons-react";
 import { Plus } from "lucide-react";
 
-/* ---------- Table meta typing so cells can call helpers ---------- */
-declare module "@tanstack/table-core" {
-  interface TableMeta<TData extends RowData> {
-    removeRow?: (id: number) => void;
-    invalidate?: () => void;
-    /** NEW: immutable per-row updater to force re-render */
-    updateRow?: (id: number, patch: Partial<TData>) => void;
-  }
-}
+import { JobStatus } from "@/types/prisma";
 
 /* ---------------- Types & Schema ---------------- */
-
-type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
 
 export const jobSchema = z.object({
   id: z.number(),
@@ -148,13 +137,7 @@ export type JobRow = {
 
 /* ---------------- helpers ---------------- */
 
-function fmtHMSfromMs(ms: number) {
-  const sec = Math.floor(ms / 1000);
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
-}
+import { fmtHMSFromMs } from "@/lib/format";
 
 function liveTotalMs(job: JobRow) {
   if (job.status === "ACTIVE" && job.startedAt) {
@@ -174,7 +157,7 @@ function TotalCell({ job }: { job: JobRow }) {
     return () => clearInterval(id);
   }, [job.status, job.startedAt]);
   return (
-    <div className="text-right font-mono">{fmtHMSfromMs(liveTotalMs(job))}</div>
+    <div className="text-right font-mono">{fmtHMSFromMs(liveTotalMs(job))}</div>
   );
 }
 
@@ -385,7 +368,7 @@ function JobDrawer({
           <div className="grid gap-2">
             <div className="text-sm">
               Saved total:{" "}
-              <span className="font-mono">{fmtHMSfromMs(job.totalMs)}</span>
+              <span className="font-mono">{fmtHMSFromMs(job.totalMs)}</span>
               {job.status === "ACTIVE" && job.startedAt ? (
                 <span className="ml-2 text-muted-foreground">
                   (running since {new Date(job.startedAt).toLocaleString()})

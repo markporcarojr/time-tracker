@@ -1,13 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Badge } from "./ui/badge";
-
-export function fmtHMS(totalSeconds: number) {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
-}
+import { fmtHMS } from "@/lib/format";
 
 export default function LiveElapsed({
   totalMs,

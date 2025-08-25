@@ -41,8 +41,8 @@ export async function getDashboardSummary(userDbId: number) {
     select: { status: true, runningSince: true },
   });
 
-  const activeJobs = jobs.filter((j) => j.status === "ACTIVE").length;
-  const runningJobs = jobs.filter((j) => !!j.runningSince).length;
+  const activeJobs = jobs.filter((j: typeof jobs[0]) => j.status === "ACTIVE").length;
+  const runningJobs = jobs.filter((j: typeof jobs[0]) => !!j.runningSince).length;
 
   // Entries overlapping THIS WEEK
   const weekEntries = await prisma.timeEntry.findMany({

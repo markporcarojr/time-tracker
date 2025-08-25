@@ -2,16 +2,16 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import TimerClient from "./TimerClient";
-import { JobStatus } from "@prisma/client";
+import { JobStatus } from "@/types/prisma";
 
-export default async function JobPage({ params }: { params: { id: string } }) {
+export default async function JobPage({ params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth();
   if (!userId) return <div className="p-6">Unauthorized</div>;
 
   const user = await prisma.user.findUnique({ where: { clerkId: userId } });
   if (!user) return <div className="p-6">No user</div>;
 
-  const { id } = params;
+  const { id } = await params;
   const jobId = Number(id);
   const job = await prisma.job.findFirst({
     where: { id: jobId, userId: user.id },
