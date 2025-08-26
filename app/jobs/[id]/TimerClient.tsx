@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn, fmtHMS } from "@/lib/utils";
+import { Job } from "@/types/prisma";
 import type { $Enums } from "@prisma/client";
 import {
   AlertDialog,
@@ -26,21 +27,13 @@ import { toast } from "sonner";
 
 type JobStatus = $Enums.JobStatus;
 
-export default function TimerClient(props: {
-  jobId: number;
-  jobNumber: number;
-  status: JobStatus;
-  totalMs: number;
-  startedAtISO?: string | null;
-  customerName: string;
-  description?: string | null;
-}) {
+export default function TimerClient(props: Job) {
   const router = useRouter();
 
   const [status, setStatus] = useState<JobStatus>(props.status);
   const [baseMs, setBaseMs] = useState<number>(props.totalMs);
   const [startedAt, setStartedAt] = useState<number | null>(
-    props.startedAtISO ? new Date(props.startedAtISO).getTime() : null
+    props.startedAt ? new Date(props.startedAt).getTime() : null
   );
 
   // live display seconds (base + (now - startedAt) when ACTIVE)
@@ -65,7 +58,7 @@ export default function TimerClient(props: {
   // light polling to catch changes from other tabs
   useEffect(() => {
     const id = setInterval(async () => {
-      const res = await fetch(`/api/jobs/${props.jobId}`, {
+      const res = await fetch(`/api/jobs/${props.id}`, {
         cache: "no-store",
       });
       if (!res.ok) return;
@@ -75,11 +68,11 @@ export default function TimerClient(props: {
       setStartedAt(job.startedAt ? new Date(job.startedAt).getTime() : null);
     }, 6000);
     return () => clearInterval(id);
-  }, [props.jobId]);
+  }, [props.id]);
 
   // Start => PATCH { status: "ACTIVE" } (server sets startedAt)
   const start = async () => {
-    const res = await fetch(`/api/jobs/${props.jobId}`, {
+    const res = await fetch(`/api/jobs/${props.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "ACTIVE" }),
@@ -97,7 +90,7 @@ export default function TimerClient(props: {
 
   // Stop => PATCH { status: "PAUSED" } (server accumulates totalMs, clears startedAt)
   const stop = async () => {
-    const res = await fetch(`/api/jobs/${props.jobId}`, {
+    const res = await fetch(`/api/jobs/${props.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "PAUSED" }),
@@ -113,7 +106,7 @@ export default function TimerClient(props: {
 
   const doDelete = async () => {
     try {
-      const p = fetch(`/api/jobs/${props.jobId}`, { method: "DELETE" }).then(
+      const p = fetch(`/api/jobs/${props.id}`, { method: "DELETE" }).then(
         async (res) => {
           if (!res.ok) {
             const text = await res.text().catch(() => "");
@@ -132,22 +125,6 @@ export default function TimerClient(props: {
       router.refresh();
     } catch (err) {
       // error handled by toast.promise
-    }
-  };
-
-  // direct status change via badges (ACTIVE/PAUSED/DONE)
-  const setStatusOnly = async (s: JobStatus) => {
-    const res = await fetch(`/api/jobs/${props.jobId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: s }),
-    });
-    if (res.ok) {
-      const { job } = await res.json();
-      setStatus(job.status);
-      setBaseMs(job.totalMs);
-      setStartedAt(job.startedAt ? new Date(job.startedAt).getTime() : null);
-      router.refresh();
     }
   };
 

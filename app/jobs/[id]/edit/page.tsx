@@ -25,6 +25,8 @@ export default async function EditJobPage({
       totalMs: true,
       startedAt: true,
       jobNumber: true,
+      stoppedAt: true,
+      userId: true,
     },
   });
   if (!job) return <div className="p-6">Job not found</div>;

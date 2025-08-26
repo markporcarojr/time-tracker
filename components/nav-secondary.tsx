@@ -1,8 +1,5 @@
 "use client";
 
-import * as React from "react";
-import Link from "next/link";
-import type { Icon as TablerIcon } from "@tabler/icons-react";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -10,6 +7,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import type { Icon as TablerIcon } from "@tabler/icons-react";
+import Link from "next/link";
+import * as React from "react";
 
 export function NavSecondary({
   items,

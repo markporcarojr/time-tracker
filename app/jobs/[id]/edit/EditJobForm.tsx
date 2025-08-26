@@ -1,13 +1,11 @@
 // app/jobs/[id]/edit/EditJobForm.tsx
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -16,27 +14,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
-
-type Job = {
-  id: number;
-  jobNumber: number | null;
-  customerName: string;
-  description: string | null;
-  status: "ACTIVE" | "PAUSED" | "DONE";
-  totalMs: number;
-  startedAt: Date | null;
-};
-
-function fmtHMS(ms: number) {
-  const sec = Math.floor(ms / 1000);
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
-}
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Job } from "@/types/prisma";
+import { fmtHMS } from "@/lib/utils";
 
 export default function EditJobForm({ job }: { job: Job }) {
   const router = useRouter();

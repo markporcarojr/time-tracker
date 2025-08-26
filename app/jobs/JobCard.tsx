@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -33,20 +32,19 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Job, $Enums } from "@prisma/client";
 import { STATUS_META } from "@/data/statusMeta";
+import { $Enums, Job } from "@prisma/client";
 import Meta from "./Meta";
 import StatusPill from "./StatusPill";
-import { convertToHours } from "@/lib/msToHours";
 
 import {
   Clock,
   EllipsisVertical,
   Hash,
   Pencil,
+  TimerReset,
   Trash2,
   User2,
-  TimerReset,
 } from "lucide-react";
 
 /* -------------------------------------------------------------------------- */
@@ -145,7 +143,7 @@ export default function JobCard({
             backgroundImage:
               "linear-gradient(to right, var(--tw-ring) 1px, transparent 1px), linear-gradient(to bottom, var(--tw-ring) 1px, transparent 1px)",
             backgroundSize: "20px 20px",
-            // @ts-ignore
+            // @ts-expect-error: CSS custom property assignment is not recognized by TypeScript, but is valid here
             "--tw-ring": "hsl(var(--border))",
           }}
         />

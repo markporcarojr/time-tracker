@@ -1,6 +1,6 @@
 // app/api/jobs/[id]/route.ts
-import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 // GET already existed in your project. Keeping it for completeness.

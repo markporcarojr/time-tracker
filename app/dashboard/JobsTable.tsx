@@ -3,7 +3,7 @@
 import Link from "next/link";
 import * as React from "react";
 import { toast } from "sonner";
-import Job from "../../prisma/";
+import { Job } from "../../types/prisma";
 
 import {
   AlertDialog,
@@ -121,16 +121,6 @@ declare module "@tanstack/table-core" {
 /* ---------------- Types & Schema ---------------- */
 
 type JobStatus = $Enums.JobStatus;
-
-export type Job = {
-  id: number;
-  customerName: string;
-  jobNumber: number | null;
-  description: string | null;
-  status: JobStatus;
-  totalMs: number;
-  startedAt: string | Date | null; // string if serialized from server
-};
 
 /* ---------------- helpers ---------------- */
 

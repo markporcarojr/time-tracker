@@ -1,10 +1,10 @@
 // app/api/webhooks/clerk/route.ts
 export const runtime = "nodejs";
 
-import { Webhook } from "svix";
+import prisma from "@/lib/prisma";
 import type { WebhookEvent } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
-import prisma from "@/lib/prisma";
+import { Webhook } from "svix";
 
 export async function POST(req: Request) {
   try {

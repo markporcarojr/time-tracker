@@ -6,7 +6,8 @@ import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 // ⬅️ Make sure this path matches where you put the table component I gave you
-import { JobsTable, type JobRow } from "./JobsTable";
+import { JobsTable } from "./JobsTable";
+import { Job } from "@/types/prisma";
 import { toast } from "sonner";
 
 export default async function Page() {
@@ -41,8 +42,8 @@ export default async function Page() {
     },
   });
 
-  // Serialize dates for the client table schema (JobRow expects ISO strings or null)
-  const rows: JobRow[] = jobs.map((j) => ({
+  // Serialize dates for the client table schema (Job expects ISO strings or null)
+  const rows: Job[] = jobs.map((j) => ({
     id: j.id,
     jobNumber: j.jobNumber,
     customerName: j.customerName,

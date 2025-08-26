@@ -1,14 +1,12 @@
 // import NavBar from "@/components/NavBar";
+import AppSidebarServer from "@/components/AppSidebarServer";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
+import { Providers } from "@/providers";
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Providers } from "@/providers";
-import { Toaster } from "@/components/ui/sonner";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { checkUser } from "@/lib/auth/checkUser";
-import AppSidebarServer from "@/components/AppSidebarServer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

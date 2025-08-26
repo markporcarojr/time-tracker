@@ -1,8 +1,8 @@
 // app/jobs/[id]/page.tsx
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import TimerClient from "./TimerClient";
 import { JobStatus } from "@prisma/client";
+import TimerClient from "./TimerClient";
 
 export default async function JobPage({ params }: { params: { id: string } }) {
   const { userId } = await auth();
