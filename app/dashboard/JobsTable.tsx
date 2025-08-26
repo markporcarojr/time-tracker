@@ -1,8 +1,9 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
+import * as React from "react";
 import { toast } from "sonner";
+import Job from "../../prisma/";
 
 import {
   AlertDialog,
@@ -53,9 +54,7 @@ import {
 } from "@tanstack/react-table";
 
 import type { RowData } from "@tanstack/table-core";
-import { z } from "zod";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -67,6 +66,13 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -85,31 +91,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
+import { $Enums } from "@prisma/client";
 import {
-  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
   IconChevronsLeft,
   IconChevronsRight,
-  IconDotsVertical,
-  IconGripVertical,
   IconCircleCheckFilled,
-  IconPlayerPlay,
-  IconPlayerPause,
   IconDeviceFloppy,
+  IconDotsVertical,
   IconEdit,
+  IconGripVertical,
+  IconPlayerPause,
+  IconPlayerPlay,
 } from "@tabler/icons-react";
 import { Plus } from "lucide-react";
-import { $Enums } from "@prisma/client";
 
 /* ---------- Table meta typing so cells can call helpers ---------- */
 declare module "@tanstack/table-core" {
@@ -125,7 +122,7 @@ declare module "@tanstack/table-core" {
 
 type JobStatus = $Enums.JobStatus;
 
-export type JobRow = {
+export type Job = {
   id: number;
   customerName: string;
   jobNumber: number | null;
@@ -145,7 +142,7 @@ function fmtHMSfromMs(ms: number) {
   return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
-function liveTotalMs(job: JobRow) {
+function liveTotalMs(job: Job) {
   if (job.status === "ACTIVE" && job.startedAt) {
     const start = new Date(job.startedAt).getTime();
     return job.totalMs + Math.max(0, Date.now() - start);
@@ -155,7 +152,7 @@ function liveTotalMs(job: JobRow) {
 
 /* --------------- total cell (uses hooks) -------------- */
 
-function TotalCell({ job }: { job: JobRow }) {
+function TotalCell({ job }: { job: Job }) {
   const [, setTick] = React.useState(0);
   React.useEffect(() => {
     if (job.status !== "ACTIVE" || !job.startedAt) return;
@@ -198,8 +195,8 @@ function JobDrawer({
   job,
   onPatched,
 }: {
-  job: JobRow;
-  onPatched: (next: Partial<JobRow>) => void;
+  job: Job;
+  onPatched: (next: Partial<Job>) => void;
 }) {
   const [open, setOpen] = React.useState(false);
   const [customerName, setCustomerName] = React.useState(job.customerName);
@@ -211,11 +208,11 @@ function JobDrawer({
   const [addMinutes, setAddMinutes] = React.useState<number>(0);
   const [busy, setBusy] = React.useState(false);
 
-  type PatchResponse = { job: JobRow } | JobRow;
+  type PatchResponse = { job: Job } | Job;
 
   const submitPatch = async (
     payload: Partial<
-      Pick<JobRow, "customerName" | "description" | "status" | "jobNumber">
+      Pick<Job, "customerName" | "description" | "status" | "jobNumber">
     > & {
       addMinutes?: number;
       resetTotal?: boolean;
@@ -464,7 +461,7 @@ function JobDrawer({
 
 type Checked = boolean | "indeterminate";
 
-export const columns: ColumnDef<JobRow>[] = [
+export const columns: ColumnDef<Job>[] = [
   {
     id: "drag",
     header: () => null,
@@ -627,7 +624,7 @@ export const columns: ColumnDef<JobRow>[] = [
 
 /* --------------- draggable row --------------- */
 
-function DraggableRow({ row }: { row: Row<JobRow> }) {
+function DraggableRow({ row }: { row: Row<Job> }) {
   const {
     transform,
     transition,
@@ -663,7 +660,7 @@ function DraggableRow({ row }: { row: Row<JobRow> }) {
 
 /* ---------------- main table ---------------- */
 
-export function JobsTable({ data: initialData }: { data: JobRow[] }) {
+export function JobsTable({ data: initialData }: { data: Job[] }) {
   const [data, setData] = React.useState(() => initialData);
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
@@ -688,7 +685,7 @@ export function JobsTable({ data: initialData }: { data: JobRow[] }) {
     [data]
   );
 
-  const table = useReactTable<JobRow>({
+  const table = useReactTable<Job>({
     data,
     columns,
     state: {
@@ -716,7 +713,7 @@ export function JobsTable({ data: initialData }: { data: JobRow[] }) {
         setData((prev) => prev.filter((r) => r.id !== id)),
       invalidate: () => setData((prev) => [...prev]),
       /** NEW: immutable row replacement so cells re-render */
-      updateRow: (id: number, patch: Partial<JobRow>) =>
+      updateRow: (id: number, patch: Partial<Job>) =>
         setData((prev) =>
           prev.map((r) => (r.id === id ? { ...r, ...patch } : r))
         ),
