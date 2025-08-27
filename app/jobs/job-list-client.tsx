@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import * as React from "react";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -21,9 +20,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { ArrowUpDown, Filter, Plus, Search } from "lucide-react";
 
-import { fmtHMS } from "@/lib/format";
 import { convertToHours } from "@/lib/msToHours";
-import { liveTotalMs } from "@/lib/utils";
 import type { $Enums } from "@prisma/client";
 import { Job } from "@prisma/client";
 import JobCard from "./JobCard";

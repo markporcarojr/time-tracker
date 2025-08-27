@@ -6,15 +6,17 @@ import EditJobForm from "./EditJobForm";
 export default async function EditJobPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id: idParam } = await params; // 👈 Next 15: params is a Promise
+  const id = Number(idParam);
+
   const { userId } = await auth();
   if (!userId) return <div className="p-6">Unauthorized</div>;
 
   const user = await prisma.user.findUnique({ where: { clerkId: userId } });
   if (!user) return <div className="p-6">No user</div>;
 
-  const id = Number(params.id);
   const job = await prisma.job.findFirst({
     where: { id, userId: user.id },
     select: {
@@ -29,6 +31,7 @@ export default async function EditJobPage({
       userId: true,
     },
   });
+
   if (!job) return <div className="p-6">Job not found</div>;
 
   return (

@@ -123,7 +123,7 @@ export default function TimerClient(props: Job) {
       });
 
       router.refresh();
-    } catch (err) {
+    } catch {
       // error handled by toast.promise
     }
   };
@@ -146,7 +146,7 @@ export default function TimerClient(props: Job) {
           backgroundImage:
             "linear-gradient(to right, var(--tw-ring) 1px, transparent 1px), linear-gradient(to bottom, var(--tw-ring) 1px, transparent 1px)",
           backgroundSize: "20px 20px",
-          // @ts-ignore
+          // @ts-expect-error: CSS custom property assignment is not typed in style object
           "--tw-ring": "hsl(var(--border))",
         }}
       />

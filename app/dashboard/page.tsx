@@ -38,15 +38,15 @@ export default async function Page() {
     },
   });
 
-  // Serialize dates for the client table schema (Job expects ISO strings or null)
-  const rows: Job[] = jobs.map((j: any) => ({
+  // Pass jobs directly, since JobsTable expects startedAt and stoppedAt as Date | null
+  const rows: Job[] = jobs.map((j) => ({
     id: j.id,
     jobNumber: j.jobNumber,
     customerName: j.customerName,
     description: j.description,
     status: j.status, // "ACTIVE" | "PAUSED" | "DONE"
-    startedAt: j.startedAt ? j.startedAt.toISOString() : null,
-    stoppedAt: j.stoppedAt ? j.stoppedAt.toISOString() : null,
+    startedAt: j.startedAt,
+    stoppedAt: j.stoppedAt,
     totalMs: j.totalMs ?? 0,
     userId: j.userId,
   }));

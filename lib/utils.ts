@@ -1,4 +1,4 @@
-import { JobRow } from "@/app/dashboard/JobsTable";
+import { Job } from "@prisma/client";
 import { clsx, type ClassValue } from "clsx";
 import React from "react";
 import { twMerge } from "tailwind-merge";
@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function liveTotalMs(job: JobRow) {
+export function liveTotalMs(job: Job) {
   if (job.status === "ACTIVE" && job.startedAt) {
     const start = new Date(job.startedAt).getTime();
     return job.totalMs + Math.max(0, Date.now() - start);
@@ -23,7 +23,7 @@ export function fmtHMS(totalSeconds: number) {
   return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
-export function TotalCell({ job }: { job: JobRow }) {
+export function TotalCell({ job }: { job: Job }) {
   const [, setTick] = React.useState(0);
   React.useEffect(() => {
     if (job.status !== "ACTIVE" || !job.startedAt) return;
