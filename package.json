@@ -9,6 +9,9 @@
     "lint": "next lint",
     "prisma:seed": "ts-node --compiler-options '{\"module\":\"commonjs\"}' prisma/seed.ts"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@clerk/nextjs": "^6.29.0",
     "@dnd-kit/core": "^6.3.1",
