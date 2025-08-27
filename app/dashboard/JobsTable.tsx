@@ -53,8 +53,6 @@ import {
   VisibilityState,
 } from "@tanstack/react-table";
 
-import type { RowData } from "@tanstack/table-core";
-
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -108,16 +106,6 @@ import {
 } from "@tabler/icons-react";
 import { Plus } from "lucide-react";
 import { fmtHMS, liveTotalMs } from "@/lib/utils";
-
-/* ---------- Table meta typing so cells can call helpers ---------- */
-declare module "@tanstack/table-core" {
-  interface TableMeta<TData extends RowData> {
-    removeRow?: (id: number) => void;
-    invalidate?: () => void;
-    /** NEW: immutable per-row updater to force re-render */
-    updateRow?: (id: number, patch: Partial<TData>) => void;
-  }
-}
 
 /* ---------------- Types & Schema ---------------- */
 
