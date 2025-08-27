@@ -107,6 +107,7 @@ import {
   IconPlayerPlay,
 } from "@tabler/icons-react";
 import { Plus } from "lucide-react";
+import { fmtHMS, liveTotalMs } from "@/lib/utils";
 
 /* ---------- Table meta typing so cells can call helpers ---------- */
 declare module "@tanstack/table-core" {
@@ -124,22 +125,6 @@ type JobStatus = $Enums.JobStatus;
 
 /* ---------------- helpers ---------------- */
 
-function fmtHMSfromMs(ms: number) {
-  const sec = Math.floor(ms / 1000);
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
-}
-
-function liveTotalMs(job: Job) {
-  if (job.status === "ACTIVE" && job.startedAt) {
-    const start = new Date(job.startedAt).getTime();
-    return job.totalMs + Math.max(0, Date.now() - start);
-  }
-  return job.totalMs;
-}
-
 /* --------------- total cell (uses hooks) -------------- */
 
 function TotalCell({ job }: { job: Job }) {
@@ -149,9 +134,7 @@ function TotalCell({ job }: { job: Job }) {
     const id = setInterval(() => setTick((n) => n + 1), 1000);
     return () => clearInterval(id);
   }, [job.status, job.startedAt]);
-  return (
-    <div className="text-right font-mono">{fmtHMSfromMs(liveTotalMs(job))}</div>
-  );
+  return <div className="text-right font-mono">{fmtHMS(liveTotalMs(job))}</div>;
 }
 
 /* --------------- DnD: pass handle props via context -------------- */
@@ -361,7 +344,7 @@ function JobDrawer({
           <div className="grid gap-2">
             <div className="text-sm">
               Saved total:{" "}
-              <span className="font-mono">{fmtHMSfromMs(job.totalMs)}</span>
+              <span className="font-mono">{fmtHMS(job.totalMs)}</span>
               {job.status === "ACTIVE" && job.startedAt ? (
                 <span className="ml-2 text-muted-foreground">
                   (running since {new Date(job.startedAt).toLocaleString()})
