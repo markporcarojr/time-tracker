@@ -5,6 +5,10 @@ import { Providers } from "@/providers";
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import "./globals.css";
+// app/layout.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export const metadata: Metadata = {
   title: "Rc Fluid Power",
@@ -16,14 +20,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // const u = await checkUser().catch(() => null);
-
-  // const user = {
-  //   name: u?.name ?? null,
-  //   email: u?.email ?? null,
-  //   clerkId: u?.id, // assuming u is coming from Clerk
-  // };
-
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>

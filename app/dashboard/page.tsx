@@ -2,6 +2,10 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { Job } from "@/types/prisma";
 import { toast } from "sonner";
+// app/dashboard/page.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 // For now, we'll create a simple layout without the missing components
 import { JobsTable } from "./JobsTable";
