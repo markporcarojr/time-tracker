@@ -1,4 +1,4 @@
-import { PrismaClient, JobStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -11,6 +11,19 @@ async function main() {
       email: "dev@example.com",
       name: "Dev User",
       clerkId: "test_clerk_123", // <-- change if you already use Clerk
+      role: "USER",
+    },
+  });
+
+  // Create an admin user for testing
+  const adminUser = await prisma.user.upsert({
+    where: { email: "admin@example.com" },
+    update: {},
+    create: {
+      email: "admin@example.com",
+      name: "Admin User",
+      clerkId: "test_clerk_admin",
+      role: "ADMIN",
     },
   });
 
@@ -23,39 +36,57 @@ async function main() {
     data: [
       {
         userId: user.id,
-        name: "Lathe – CRS Rod Batch A",
+        customerName: "Test Customer A",
         description: 'Turn 3/4" CRS to Ø0.708", 20 pcs. Tool: CNMG-432.',
         // paused, never started yet
         startedAt: null,
         stoppedAt: null,
         totalMs: 0,
-        status: JobStatus.PAUSED,
+        status: "PAUSED",
       },
       {
         userId: user.id,
-        name: "Mill – Bracket B OP1/OP2",
+        customerName: "Test Customer B",
         description: "Face + drill + contour. Work offset G54. Coolant on.",
         // currently running: started 25 min ago, already had 2h15m accumulated
         startedAt: new Date(now.getTime() - minutes(25)),
         stoppedAt: null,
         totalMs: hours(2) + minutes(15),
-        status: JobStatus.RUNNING,
+        status: "ACTIVE",
       },
       {
         userId: user.id,
-        name: "QA & Deburr – Batch #1049",
+        customerName: "Test Customer C",
         description: 'Chamfer edges, check ±0.001" on ID, bag & tag.',
         // paused: was running earlier, stopped 5 min ago with 45m accumulated
         startedAt: null,
         stoppedAt: new Date(now.getTime() - minutes(5)),
         totalMs: minutes(45),
-        status: JobStatus.PAUSED,
+        status: "PAUSED",
+      },
+      {
+        userId: adminUser.id,
+        customerName: "Admin Project X",
+        description: "Administrative oversight and coordination tasks.",
+        startedAt: null,
+        stoppedAt: null,
+        totalMs: hours(8) + minutes(30),
+        status: "DONE",
+      },
+      {
+        userId: adminUser.id,
+        customerName: "System Maintenance",
+        description: "Database cleanup and system optimization.",
+        startedAt: new Date(now.getTime() - minutes(15)),
+        stoppedAt: null,
+        totalMs: minutes(45),
+        status: "ACTIVE",
       },
     ],
     skipDuplicates: true,
   });
 
-  console.log("Seeded 3 jobs.");
+  console.log("Seeded 5 jobs for 2 users (1 regular, 1 admin).");
 }
 
 main()

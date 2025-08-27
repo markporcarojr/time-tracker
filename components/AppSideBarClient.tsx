@@ -13,6 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useAdminNav } from "@/hooks/useAdminNav";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -20,8 +21,12 @@ import { navMain, navSecondary } from "../data/navData";
 
 export default function AppSidebarClient() {
   const pathname = usePathname();
+  const adminNavItems = useAdminNav();
 
-  const main = navMain.map((item) => ({
+  // Combine main nav with admin nav if user is admin
+  const allMainItems = [...navMain, ...adminNavItems];
+
+  const main = allMainItems.map((item) => ({
     ...item,
     isActive: pathname === item.url || pathname?.startsWith(item.url + "/"),
   }));
