@@ -23,6 +23,7 @@ export const checkUser = async () => {
         name: `${user.firstName} ${user.lastName} `,
         // imageUrl : user.imageUrl,
         email: user.emailAddresses[0]?.emailAddress,
+        role: "USER", // Default role
       },
     });
 
