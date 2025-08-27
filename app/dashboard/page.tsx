@@ -39,7 +39,7 @@ export default async function Page() {
   });
 
   // Serialize dates for the client table schema (Job expects ISO strings or null)
-  const rows: Job[] = jobs.map((j) => ({
+  const rows: Job[] = jobs.map((j: any) => ({
     id: j.id,
     jobNumber: j.jobNumber,
     customerName: j.customerName,

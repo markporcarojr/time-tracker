@@ -1,4 +1,4 @@
-import { PrismaClient, JobStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -42,7 +42,7 @@ async function main() {
         startedAt: null,
         stoppedAt: null,
         totalMs: 0,
-        status: JobStatus.PAUSED,
+        status: "PAUSED",
       },
       {
         userId: user.id,
@@ -52,7 +52,7 @@ async function main() {
         startedAt: new Date(now.getTime() - minutes(25)),
         stoppedAt: null,
         totalMs: hours(2) + minutes(15),
-        status: JobStatus.ACTIVE,
+        status: "ACTIVE",
       },
       {
         userId: user.id,
@@ -62,7 +62,7 @@ async function main() {
         startedAt: null,
         stoppedAt: new Date(now.getTime() - minutes(5)),
         totalMs: minutes(45),
-        status: JobStatus.PAUSED,
+        status: "PAUSED",
       },
       {
         userId: adminUser.id,
@@ -71,7 +71,7 @@ async function main() {
         startedAt: null,
         stoppedAt: null,
         totalMs: hours(8) + minutes(30),
-        status: JobStatus.DONE,
+        status: "DONE",
       },
       {
         userId: adminUser.id,
@@ -80,7 +80,7 @@ async function main() {
         startedAt: new Date(now.getTime() - minutes(15)),
         stoppedAt: null,
         totalMs: minutes(45),
-        status: JobStatus.ACTIVE,
+        status: "ACTIVE",
       },
     ],
     skipDuplicates: true,
