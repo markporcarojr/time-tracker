@@ -1,7 +1,6 @@
 // app/jobs/[id]/page.tsx
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { JobStatus } from "@prisma/client";
 import TimerClient from "./TimerClient";
 
 export default async function JobPage({
@@ -44,7 +43,7 @@ export default async function JobPage({
         totalMs={job.totalMs}
         startedAt={job.startedAt}
         stoppedAt={job.stoppedAt}
-        status={job.status as JobStatus}
+        status={job.status}
         userId={job.userId}
       />
     </div>
