@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { STATUS_META } from "@/data/statusMeta";
-import { Job } from "@prisma/client";
+import type { Job } from "@prisma/client";
 
 export default function StatusPill({ status }: { status: Job["status"] }) {
   const meta = STATUS_META[status];
