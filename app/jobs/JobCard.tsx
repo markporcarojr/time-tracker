@@ -1,5 +1,4 @@
 "use client";
-"use client";
 
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -33,11 +32,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { STATUS_META } from "@/data/statusMeta";
-import type { $Enums, Job } from "@prisma/client"; // type-only so Prisma client isn't bundled on the client
-import Meta from "./Meta";
-import StatusPill from "./StatusPill";
-
 import {
   Clock,
   EllipsisVertical,
@@ -48,16 +42,44 @@ import {
   User2,
 } from "lucide-react";
 
-import { fmtHMS } from "@/lib/utils"; // you were using fmtHMS but not importing it
+/** ------------------------ Minimal local types ------------------------ */
+// If you already have a Job type, delete this block and import yours.
+type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
+type Job = {
+  id: number;
+  customerName: string;
+  jobNumber: number | null;
+  description: string | null;
+  status: JobStatus;
+  totalMs: number;
+  startedAt: string | Date | null;
+};
 
-/* -------------------------------------------------------------------------- */
-/*                           Local helpers (no casts)                          */
-/* -------------------------------------------------------------------------- */
+/** ------------------------ Tiny utils (no deps) ------------------------ */
+function fmtHMS(ms: number) {
+  const sec = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
 
-/**
- * Live ticker for ACTIVE jobs.
- * Displays hh:mm:ss derived from job.totalMs + (now - startedAt).
- */
+const STATUS_BAR: Record<JobStatus, string> = {
+  ACTIVE: "bg-emerald-500",
+  PAUSED: "bg-amber-500",
+  DONE: "bg-zinc-400",
+};
+
+const STATUS_PILL: Record<JobStatus, string> = {
+  ACTIVE:
+    "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+  PAUSED:
+    "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
+  DONE: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300 border-zinc-500/30",
+};
+
+/** Live ticker for ACTIVE jobs (hh:mm:ss from totalMs + elapsed) */
 function LiveTotal({
   job,
 }: {
@@ -65,33 +87,39 @@ function LiveTotal({
 }) {
   const base = job.totalMs ?? 0;
 
-  const live = useMemo(() => {
-    if (job.status !== "ACTIVE" || !job.startedAt) return base;
-    return base + (Date.now() - new Date(job.startedAt).getTime());
-  }, [base, job.status, job.startedAt]);
+  // 1) Stabilize startedAt as a primitive number (ms since epoch)
+  const startedAtMs = useMemo<number | null>(() => {
+    if (!job.startedAt) return null;
+    if (typeof job.startedAt === "string") {
+      const t = Date.parse(job.startedAt);
+      return Number.isFinite(t) ? t : null;
+    }
+    return job.startedAt.getTime();
+  }, [job.startedAt]);
 
-  const [ms, setMs] = useState<number>(live);
+  // 2) Compute the initial live value from stable deps
+  const liveStart = useMemo(() => {
+    if (job.status !== "ACTIVE" || startedAtMs == null) return base;
+    return base + (Date.now() - startedAtMs);
+  }, [base, job.status, startedAtMs]);
+
+  // 3) Drive UI with state that ticks every second while ACTIVE
+  const [ms, setMs] = useState<number>(liveStart);
 
   useEffect(() => {
-    if (job.status !== "ACTIVE" || !job.startedAt) {
+    if (job.status !== "ACTIVE" || startedAtMs == null) {
       setMs(base);
       return;
     }
-    setMs(live);
-    const id = setInterval(() => {
-      setMs((v) => v + 1000);
-    }, 1000);
+    setMs(liveStart);
+    const id = setInterval(() => setMs((v) => v + 1000), 1000);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job.status, job.startedAt]);
+  }, [job.status, startedAtMs, base, liveStart]);
 
   return <span className="font-mono">{fmtHMS(ms)}</span>;
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                 Component                                  */
-/* -------------------------------------------------------------------------- */
-
+/** ------------------------------- Component ------------------------------- */
 export default function JobCard({
   job,
   deleting,
@@ -103,7 +131,7 @@ export default function JobCard({
   isPending: boolean;
   onDelete: () => void;
 }) {
-  const meta = STATUS_META[job.status as $Enums.JobStatus];
+  const barClass = STATUS_BAR[job.status];
 
   return (
     <motion.div
@@ -113,34 +141,13 @@ export default function JobCard({
     >
       <div
         className={[
-          // container
           "group relative overflow-hidden rounded-2xl border",
           "border-border/60 bg-card/80 shadow-sm ring-1 ring-border/40 backdrop-blur",
           "hover:shadow-md",
-          // gradient frame
-          "before:pointer-events-none before:absolute before:inset-0",
-          "before:rounded-2xl before:bg-[radial-gradient(1200px_200px_at_0%_-10%,hsl(var(--primary)/0.12),transparent_60%)]",
-          // animated shine
-          "after:pointer-events-none after:absolute after:-left-40 after:top-0 after:h-full after:w-40",
-          "after:translate-x-[-120%] after:rotate-12 after:bg-gradient-to-r after:from-transparent",
-          "after:via-white/10 after:to-transparent after:opacity-0 after:transition",
-          "group-hover:after:translate-x-[220%] group-hover:after:opacity-100",
         ].join(" ")}
       >
         {/* slim status bar */}
-        <div className={`absolute inset-x-0 top-0 h-1 ${meta.bar}`} />
-
-        {/* soft grid backdrop */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, var(--tw-ring) 1px, transparent 1px), linear-gradient(to bottom, var(--tw-ring) 1px, transparent 1px)",
-            backgroundSize: "20px 20px",
-            // @ts-expect-error: CSS custom property assignment is not recognized by TypeScript, but is valid here
-            "--tw-ring": "hsl(var(--border))",
-          }}
-        />
+        <div className={`absolute inset-x-0 top-0 h-1 ${barClass}`} />
 
         <div className="relative p-4 sm:p-5">
           {/* Header row */}
@@ -158,24 +165,23 @@ export default function JobCard({
                 </Link>
               </div>
 
-              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
-                <Meta icon={<Hash className="h-3.5 w-3.5" />} title="Job #">
-                  {job.jobNumber ?? (
-                    <span className="italic text-muted-foreground">
-                      No Job #
-                    </span>
-                  )}
-                </Meta>
-                <Meta icon={<User2 className="h-3.5 w-3.5" />} title="Customer">
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <Hash className="h-3.5 w-3.5" />
+                  <span className="font-medium">Job #:</span>{" "}
+                  {job.jobNumber ?? <span className="italic">No Job #</span>}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <User2 className="h-3.5 w-3.5" />
+                  <span className="font-medium">Customer:</span>{" "}
                   {job.customerName}
-                </Meta>
+                </span>
                 {job.startedAt && (
-                  <Meta
-                    icon={<TimerReset className="h-3.5 w-3.5" />}
-                    title="Started"
-                  >
+                  <span className="inline-flex items-center gap-1.5">
+                    <TimerReset className="h-3.5 w-3.5" />
+                    <span className="font-medium">Started:</span>{" "}
                     {new Date(job.startedAt).toLocaleString()}
-                  </Meta>
+                  </span>
                 )}
               </div>
             </div>
@@ -233,7 +239,7 @@ export default function JobCard({
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <DropdownMenuItem
-                        onSelect={(e) => e.preventDefault()} //
+                        onSelect={(e) => e.preventDefault()}
                         className="text-destructive focus:text-destructive"
                         disabled={deleting || isPending}
                       >
@@ -241,13 +247,12 @@ export default function JobCard({
                         Delete
                       </DropdownMenuItem>
                     </AlertDialogTrigger>
-
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete job</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Delete “{job.jobNumber}”? This will also remove all
-                          associated time sessions.
+                          Delete “{job.jobNumber ?? job.customerName}”? This
+                          will also remove all associated time sessions.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -279,7 +284,25 @@ export default function JobCard({
 
           {/* Footer */}
           <div className="mt-4 flex items-center justify-between">
-            <StatusPill status={job.status} />
+            <span
+              className={[
+                "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium",
+                STATUS_PILL[job.status],
+              ].join(" ")}
+              aria-label={`Status: ${job.status}`}
+            >
+              <span
+                className={[
+                  "inline-block h-2 w-2 rounded-full",
+                  job.status === "ACTIVE"
+                    ? "bg-emerald-500"
+                    : job.status === "PAUSED"
+                    ? "bg-amber-500"
+                    : "bg-zinc-500",
+                ].join(" ")}
+              />
+              {job.status}
+            </span>
           </div>
         </div>
       </div>
