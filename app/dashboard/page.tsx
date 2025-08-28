@@ -43,7 +43,7 @@ export default async function Page() {
   });
 
   // Pass jobs directly, since JobsTable expects startedAt and stoppedAt as Date | null
-  const rows: Job[] = jobs.map((j) => ({
+  const rows: Job[] = jobs.map((j: Job) => ({
     id: j.id,
     jobNumber: j.jobNumber,
     customerName: j.customerName,
