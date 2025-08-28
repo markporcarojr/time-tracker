@@ -1,9 +1,10 @@
 // lib/prisma.ts
+import "server-only";
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-const prisma =
+export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     // log: ['query','error','warn'],
