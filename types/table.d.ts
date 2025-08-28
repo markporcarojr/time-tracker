@@ -1,12 +1,13 @@
-// types/table.d.ts
-import type { RowData } from "@tanstack/table-core";
+// No runtime import in .d.ts files; type-only is fine.
+import type { RowData } from "@tanstack/react-table";
 
-/* ---------- Table meta typing so cells can call helpers ---------- */
-declare module "@tanstack/table-core" {
+declare module "@tanstack/react-table" {
   interface TableMeta<TData extends RowData> {
+    /** Remove a row by id */
     removeRow?: (id: number) => void;
+    /** Force an immutable update of the data array */
     invalidate?: () => void;
-    /** NEW: immutable per-row updater to force re-render */
+    /** Immutable per-row updater so cells re-render */
     updateRow?: (id: number, patch: Partial<TData>) => void;
   }
 }
