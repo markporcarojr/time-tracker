@@ -1,9 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,297 +9,162 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { fmtHMS } from "../../lib/utils"; // Assuming this is your time formatting function
+import { Pencil, Play, Square, Trash2 } from "lucide-react";
+import { useRouter } from "next/router";
 
-import {
-  Clock,
-  EllipsisVertical,
-  Hash,
-  Pencil,
-  TimerReset,
-  Trash2,
-  User2,
-} from "lucide-react";
-
-/** ------------------------ Minimal local types ------------------------ */
-// If you already have a Job type, delete this block and import yours.
-type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
-type Job = {
-  id: number;
-  customerName: string;
-  jobNumber: number | null;
-  description: string | null;
-  status: JobStatus;
-  totalMs: number;
-  startedAt: string | Date | null;
+type JobCardProps = {
+  props: {
+    id: string | number;
+    customerName: string;
+    jobNumber: string | number;
+    description?: string;
+  };
+  running: boolean;
+  displaySec: number;
+  baseMs: number;
+  start: () => void;
+  stop: () => void;
+  doDelete: () => void;
 };
 
-/** ------------------------ Tiny utils (no deps) ------------------------ */
-function fmtHMS(ms: number) {
-  const sec = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${pad(h)}:${pad(m)}:${pad(s)}`;
-}
-
-const STATUS_BAR: Record<JobStatus, string> = {
-  ACTIVE: "bg-emerald-500",
-  PAUSED: "bg-amber-500",
-  DONE: "bg-zinc-400",
-};
-
-const STATUS_PILL: Record<JobStatus, string> = {
-  ACTIVE:
-    "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
-  PAUSED:
-    "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
-  DONE: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300 border-zinc-500/30",
-};
-
-/** Live ticker for ACTIVE jobs (hh:mm:ss from totalMs + elapsed) */
-function LiveTotal({
-  job,
-}: {
-  job: Pick<Job, "status" | "startedAt" | "totalMs">;
-}) {
-  const base = job.totalMs ?? 0;
-
-  // 1) Stabilize startedAt as a primitive number (ms since epoch)
-  const startedAtMs = useMemo<number | null>(() => {
-    if (!job.startedAt) return null;
-    if (typeof job.startedAt === "string") {
-      const t = Date.parse(job.startedAt);
-      return Number.isFinite(t) ? t : null;
-    }
-    return job.startedAt.getTime();
-  }, [job.startedAt]);
-
-  // 2) Compute the initial live value from stable deps
-  const liveStart = useMemo(() => {
-    if (job.status !== "ACTIVE" || startedAtMs == null) return base;
-    return base + (Date.now() - startedAtMs);
-  }, [base, job.status, startedAtMs]);
-
-  // 3) Drive UI with state that ticks every second while ACTIVE
-  const [ms, setMs] = useState<number>(liveStart);
-
-  useEffect(() => {
-    if (job.status !== "ACTIVE" || startedAtMs == null) {
-      setMs(base);
-      return;
-    }
-    setMs(liveStart);
-    const id = setInterval(() => setMs((v) => v + 1000), 1000);
-    return () => clearInterval(id);
-  }, [job.status, startedAtMs, base, liveStart]);
-
-  return <span className="font-mono">{fmtHMS(ms)}</span>;
-}
-
-/** ------------------------------- Component ------------------------------- */
 export default function JobCard({
-  job,
-  deleting,
-  isPending,
-  onDelete,
-}: {
-  job: Job;
-  deleting: boolean;
-  isPending: boolean;
-  onDelete: () => void;
-}) {
-  const barClass = STATUS_BAR[job.status];
+  props,
+  running,
+  displaySec,
+  baseMs,
+  start,
+  stop,
+  doDelete,
+}: JobCardProps) {
+  const router = useRouter();
 
   return (
-    <motion.div
-      initial={{ y: 0, opacity: 1 }}
-      whileHover={{ y: -3 }}
-      transition={{ type: "spring", stiffness: 260, damping: 22 }}
-    >
+    <Card className="group relative overflow-hidden rounded-2xl border-2 border-border/80 bg-background shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl">
+      {/* Optional: Add a subtle linear gradient to the top for depth */}
       <div
-        className={[
-          "group relative overflow-hidden rounded-2xl border",
-          "border-border/60 bg-card/80 shadow-sm ring-1 ring-border/40 backdrop-blur",
-          "hover:shadow-md",
-        ].join(" ")}
-      >
-        {/* slim status bar */}
-        <div className={`absolute inset-x-0 top-0 h-1 ${barClass}`} />
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-border/50 via-transparent"
+      />
 
-        <div className="relative p-4 sm:p-5">
-          {/* Header row */}
-          <div className="flex items-start justify-between gap-3">
-            {/* Left: title & meta */}
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <Link
-                  href={`/jobs/${job.id}`}
-                  className="truncate text-base font-semibold leading-tight hover:underline"
-                  aria-label={`Open job ${job.customerName}`}
-                  title={job.customerName}
-                >
-                  {job.customerName}
-                </Link>
-              </div>
+      {/* Soft grid */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, var(--tw-ring) 1px, transparent 1px), linear-gradient(to bottom, var(--tw-ring) 1px, transparent 1px)",
+          backgroundSize: "20px 20px",
+          // @ts-expect-error: Custom CSS variable '--tw-ring' is not recognized by TypeScript but is required for grid styling
+          "--tw-ring": "hsl(var(--ring))",
+        }}
+      />
 
-              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <Hash className="h-3.5 w-3.5" />
-                  <span className="font-medium">Job #:</span>{" "}
-                  {job.jobNumber ?? <span className="italic">No Job #</span>}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <User2 className="h-3.5 w-3.5" />
-                  <span className="font-medium">Customer:</span>{" "}
-                  {job.customerName}
-                </span>
-                {job.startedAt && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <TimerReset className="h-3.5 w-3.5" />
-                    <span className="font-medium">Started:</span>{" "}
-                    {new Date(job.startedAt).toLocaleString()}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Right: live timer + menu */}
-            <div className="flex items-start gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="outline" className="font-mono text-[11px]">
-                      <Clock className="mr-1 h-3.5 w-3.5" />
-                      <LiveTotal job={job} />
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent side="left">
-                    {job.status === "ACTIVE"
-                      ? "Live elapsed time"
-                      : "Total time"}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
-                    aria-label="Open actions"
-                  >
-                    <EllipsisVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={`/jobs/${job.id}`}
-                      className="flex items-center gap-2"
-                    >
-                      <Clock className="h-4 w-4" />
-                      View
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={`/jobs/${job.id}/edit`}
-                      className="flex items-center gap-2"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Edit
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <DropdownMenuItem
-                        onSelect={(e) => e.preventDefault()}
-                        className="text-destructive focus:text-destructive"
-                        disabled={deleting || isPending}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete job</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Delete “{job.jobNumber ?? job.customerName}”? This
-                          will also remove all associated time sessions.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={onDelete}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-
-          {/* Description */}
-          {job.description ? (
-            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-              {job.description}
-            </p>
-          ) : (
-            <p className="mt-2 text-sm italic text-muted-foreground">
-              No description
-            </p>
-          )}
-
-          {/* Footer */}
-          <div className="mt-4 flex items-center justify-between">
-            <span
-              className={[
-                "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium",
-                STATUS_PILL[job.status],
-              ].join(" ")}
-              aria-label={`Status: ${job.status}`}
-            >
-              <span
-                className={[
-                  "inline-block h-2 w-2 rounded-full",
-                  job.status === "ACTIVE"
-                    ? "bg-emerald-500"
-                    : job.status === "PAUSED"
-                    ? "bg-amber-500"
-                    : "bg-zinc-500",
-                ].join(" ")}
-              />
-              {job.status}
+      {/* Header and content are now side-by-side */}
+      <div className="flex flex-col md:flex-row md:items-center p-6 md:p-8 md:gap-8">
+        {/* Left side: Job info */}
+        <div className="min-w-0 md:flex-1">
+          <CardTitle className="flex items-center gap-2">
+            <span className="truncate text-foreground">
+              {props.customerName.toUpperCase()}
             </span>
+          </CardTitle>
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
+            Job: {props.jobNumber}
+          </p>
+          {props.description && (
+            <CardDescription className="mt-2 line-clamp-2 text-muted-foreground">
+              {props.description.toUpperCase()}
+            </CardDescription>
+          )}
+        </div>
+
+        {/* Right side: Time display */}
+        <div className="flex flex-col items-start md:items-end mt-4 md:mt-0 md:min-w-[200px]">
+          <div className="font-mono text-[42px] leading-none tracking-tight sm:text-[56px] font-bold text-foreground">
+            {fmtHMS(running ? displaySec : Math.floor(baseMs / 1000))}
           </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Total Saved:{" "}
+            <strong className="font-semibold text-foreground">
+              {fmtHMS(Math.floor(baseMs / 1000))}
+            </strong>
+            {running && (
+              <span className="ml-2 flex items-center text-primary animate-pulse">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                </span>
+                <span className="ml-2 text-xs">Live</span>
+              </span>
+            )}
+          </p>
         </div>
       </div>
-    </motion.div>
+
+      <Separator />
+
+      {/* Button group */}
+      <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Edit Button */}
+        <Button
+          onClick={() => router.push(`/jobs/${props.id}/edit`)}
+          variant="secondary"
+          className="w-full"
+        >
+          <Pencil className="mr-2 h-4 w-4" />
+          Edit Job
+        </Button>
+
+        {/* Start/Stop Button */}
+        {!running ? (
+          <Button
+            onClick={start}
+            className="w-full md:col-span-1"
+            variant="default"
+          >
+            <Play className="mr-2 h-4 w-4" />
+            Start Timer
+          </Button>
+        ) : (
+          <Button
+            onClick={stop}
+            className="w-full md:col-span-1"
+            variant="default"
+          >
+            <Square className="mr-2 h-4 w-4" />
+            Stop Timer
+          </Button>
+        )}
+
+        {/* Delete Button */}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" className="w-full">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Job
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Delete &quot;{props.jobNumber}&quot;?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently remove the job and all timing data. This
+                action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={doDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </Card>
   );
 }
