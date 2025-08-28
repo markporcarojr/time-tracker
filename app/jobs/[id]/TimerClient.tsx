@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn, fmtHMS } from "@/lib/utils";
 import { Job } from "@/types/prisma";
-import type { $Enums } from "@prisma/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +24,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-type JobStatus = $Enums.JobStatus;
+type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
 
 export default function TimerClient(props: Job) {
   const router = useRouter();

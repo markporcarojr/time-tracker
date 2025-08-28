@@ -91,7 +91,7 @@ import {
 } from "@/components/ui/table";
 
 import { fmtHMS, liveTotalMs } from "@/lib/utils";
-import { JobStatus } from "../../types/prisma";
+
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -106,6 +106,7 @@ import {
   IconPlayerPlay,
 } from "@tabler/icons-react";
 import { Plus } from "lucide-react";
+type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
 
 /* ---------------- Types & Schema ---------------- */
 /* ---------------- helpers ---------------- */
