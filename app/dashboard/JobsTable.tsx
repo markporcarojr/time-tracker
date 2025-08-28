@@ -90,9 +90,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// import { $Enums } from "../../types/prisma";
 import { fmtHMS, liveTotalMs } from "@/lib/utils";
-import { JobStatus } from "@prisma/client";
+import { JobStatus } from "../../types/prisma";
 import {
   IconChevronLeft,
   IconChevronRight,
