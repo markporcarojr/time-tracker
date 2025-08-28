@@ -21,8 +21,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowUpDown, Filter, Plus, Search } from "lucide-react";
 
 import { convertToHours } from "@/lib/msToHours";
-import type { $Enums } from "@prisma/client";
-import { Job } from "@prisma/client";
+import type { Job } from "@/types/prisma"; // client-safe types only
 import JobCard from "./JobCard";
 
 /* -------------------------------------------------------------------------- */
@@ -33,7 +32,7 @@ interface JobListClientProps {
   initialJobs: Job[];
 }
 
-type StatusFilter = "ALL" | $Enums.JobStatus;
+type StatusFilter = "ALL" | "ACTIVE" | "PAUSED" | "DONE";
 
 type SortKey = "created" | "customerName" | "status";
 type SortDir = "asc" | "desc";
