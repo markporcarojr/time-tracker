@@ -90,7 +90,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { $Enums } from "@prisma/client";
+// import { $Enums } from "../../types/prisma";
+import { fmtHMS, liveTotalMs } from "@/lib/utils";
+import { JobStatus } from "@prisma/client";
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -105,12 +107,8 @@ import {
   IconPlayerPlay,
 } from "@tabler/icons-react";
 import { Plus } from "lucide-react";
-import { fmtHMS, liveTotalMs } from "@/lib/utils";
 
 /* ---------------- Types & Schema ---------------- */
-
-type JobStatus = $Enums.JobStatus;
-
 /* ---------------- helpers ---------------- */
 
 /* --------------- total cell (uses hooks) -------------- */
