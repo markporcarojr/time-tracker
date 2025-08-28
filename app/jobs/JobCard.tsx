@@ -1,4 +1,5 @@
 "use client";
+"use client";
 
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -33,7 +34,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { STATUS_META } from "@/data/statusMeta";
-import { $Enums, Job } from "@prisma/client";
+import type { $Enums, Job } from "@prisma/client"; // type-only so Prisma client isn't bundled on the client
 import Meta from "./Meta";
 import StatusPill from "./StatusPill";
 
@@ -47,18 +48,11 @@ import {
   User2,
 } from "lucide-react";
 
+import { fmtHMS } from "@/lib/utils"; // you were using fmtHMS but not importing it
+
 /* -------------------------------------------------------------------------- */
 /*                           Local helpers (no casts)                          */
 /* -------------------------------------------------------------------------- */
-
-function fmtHMS(totalMs: number) {
-  const s = Math.max(0, Math.floor(totalMs / 1000));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(h)}:${pad(m)}:${pad(sec)}`;
-}
 
 /**
  * Live ticker for ACTIVE jobs.
