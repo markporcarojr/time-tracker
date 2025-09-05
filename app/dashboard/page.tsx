@@ -2,13 +2,12 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { Job } from "@/types/prisma";
 import { toast } from "sonner";
+import DashboardClient from "./DashboardClient";
+
 // app/dashboard/page.tsx
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
-
-// For now, we'll create a simple layout without the missing components
-import { JobsTable } from "./JobsTable";
 
 export default async function Page() {
   let user;
@@ -55,10 +54,5 @@ export default async function Page() {
     userId: j.userId,
   }));
 
-  return (
-    <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-      <JobsTable data={rows} />
-    </div>
-  );
+  return <DashboardClient initialJobs={rows} />;
 }

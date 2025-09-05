@@ -1,4 +1,4 @@
-import { Job } from "@prisma/client";
+import type { Job } from "@/types/prisma";
 import { clsx, type ClassValue } from "clsx";
 import React from "react";
 import { twMerge } from "tailwind-merge";

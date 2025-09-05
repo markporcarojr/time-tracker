@@ -15,7 +15,6 @@ export type NavLink = {
 
 export const navMain: NavLink[] = [
   { title: "Dashboard", url: "/dashboard", icon: IconDashboard },
-  { title: "Jobs", url: "/jobs", icon: IconBriefcase },
 ];
 
 export const navSecondary: NavLink[] = [

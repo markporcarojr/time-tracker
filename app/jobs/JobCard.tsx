@@ -16,6 +16,7 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import type { Job } from "@/types/prisma";
 
 type JobCardProps = {
   job: Job;
