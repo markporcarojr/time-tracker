@@ -2,7 +2,11 @@
 
 import { useState, useMemo } from "react";
 import { JobsTable } from "./JobsTable";
-import JobsSearch, { type StatusFilter, type SortKey, type SortDir } from "./JobsSearch";
+import JobsSearch, {
+  type StatusFilter,
+  type SortKey,
+  type SortDir,
+} from "./JobsSearch";
 import { filterAndSortJobs } from "./jobsFilterUtils";
 import type { Job } from "@/types/prisma";
 
@@ -24,7 +28,7 @@ export default function DashboardClient({ initialJobs }: DashboardClientProps) {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-      
+
       <JobsSearch
         jobs={jobs}
         query={query}
@@ -37,7 +41,7 @@ export default function DashboardClient({ initialJobs }: DashboardClientProps) {
         setSortDir={setSortDir}
         filteredSorted={filteredSorted}
       />
-      
+
       <JobsTable data={filteredSorted} />
     </div>
   );

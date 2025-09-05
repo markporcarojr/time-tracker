@@ -10,34 +10,40 @@ export function filterAndSortJobs(
 ): Job[] {
   let list = [...jobs];
 
-  // filter by status
+  // --- search filter ---
+  if (query.trim()) {
+    const lower = query.toLowerCase();
+    list = list.filter(
+      (j) =>
+        j.customerName.toLowerCase().includes(lower) ||
+        j.description?.toLowerCase().includes(lower) ||
+        j.jobNumber?.toString().includes(lower)
+    );
+  }
+
+  // --- status filter ---
   if (status !== "ALL") {
     list = list.filter((j) => j.status === status);
   }
 
-  // filter by search query
-  if (query.trim()) {
-    const q = query.trim().toLowerCase();
-    list = list.filter(
-      (j) =>
-        j.customerName.toLowerCase().includes(q) ||
-        (j.description?.toLowerCase().includes(q) ?? false) ||
-        (j.jobNumber !== null && j.jobNumber.toString().includes(q))
-    );
-  }
-
-  // sort
+  // --- sorting ---
   list.sort((a, b) => {
-    let res = 0;
     if (sortKey === "customerName") {
-      res = a.customerName.localeCompare(b.customerName);
-    } else if (sortKey === "status") {
-      res = a.status.localeCompare(b.status);
-    } else {
-      // sortKey === "created" - use id as proxy for created date
-      res = a.id - b.id;
+      return sortDir === "asc"
+        ? a.customerName.localeCompare(b.customerName)
+        : b.customerName.localeCompare(a.customerName);
     }
-    return sortDir === "asc" ? res : -res;
+    if (sortKey === "created") {
+      const aTime = new Date(a.startedAt ?? 0).getTime();
+      const bTime = new Date(b.startedAt ?? 0).getTime();
+      return sortDir === "asc" ? aTime - bTime : bTime - aTime;
+    }
+    if (sortKey === "status") {
+      return sortDir === "asc"
+        ? a.status.localeCompare(b.status)
+        : b.status.localeCompare(a.status);
+    }
+    return 0;
   });
 
   return list;
