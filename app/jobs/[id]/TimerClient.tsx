@@ -44,6 +44,35 @@ export default function TimerClient(props: Job) {
     setDisplaySec(Math.floor(liveMs / 1000));
   };
 
+  // inside TimerClient
+  useEffect(() => {
+    if (status !== "ACTIVE") return;
+
+    // every hour, force an update so server accumulates time
+    const id = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/jobs/${props.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "ACTIVE" }), // tell server it's still running
+        });
+
+        if (res.ok) {
+          const { job } = await res.json();
+          setStatus(job.status);
+          setBaseMs(job.totalMs);
+          setStartedAt(
+            job.startedAt ? new Date(job.startedAt).getTime() : Date.now()
+          );
+        }
+      } catch (err) {
+        console.error("Hourly sync failed:", err);
+      }
+    }, 60 * 60 * 1000); // 1 hour
+
+    return () => clearInterval(id);
+  }, [status, props.id]);
+
   useEffect(() => {
     recalc();
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -102,6 +131,8 @@ export default function TimerClient(props: Job) {
       router.refresh();
     }
   };
+
+  // Delete => DELETE
 
   const doDelete = async () => {
     try {
