@@ -21,7 +21,7 @@ import { navMain, navSecondary } from "../data/navData";
 
 export default function AppSidebarClient() {
   const pathname = usePathname();
-  const adminNavItems = useAdminNav();
+  const { items: adminNavItems, isLoading: adminLoading } = useAdminNav();
 
   // Combine main nav with admin nav if user is admin
   const allMainItems = [...navMain, ...adminNavItems];
@@ -62,7 +62,7 @@ export default function AppSidebarClient() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={main} />
+        <NavMain items={main} isLoading={adminLoading} />
         <NavSecondary items={secondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

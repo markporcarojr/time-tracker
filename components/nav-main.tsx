@@ -6,6 +6,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
   useSidebar,
 } from "@/components/ui/sidebar";
 import type { Icon as TablerIcon } from "@tabler/icons-react";
@@ -14,6 +15,7 @@ import * as React from "react";
 
 export function NavMain({
   items,
+  isLoading = false,
   ...props
 }: {
   items: {
@@ -22,6 +24,7 @@ export function NavMain({
     icon?: TablerIcon;
     isActive?: boolean;
   }[];
+  isLoading?: boolean;
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const { setOpenMobile, isMobile } = useSidebar();
 
@@ -49,6 +52,11 @@ export function NavMain({
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+          {isLoading && (
+            <SidebarMenuItem>
+              <SidebarMenuSkeleton showIcon />
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

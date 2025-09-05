@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { IconShield } from "@tabler/icons-react";
 import { NavLink } from "@/data/navData";
 
-export function useAdminNav(): NavLink[] {
+export function useAdminNav(): { items: NavLink[]; isLoading: boolean } {
   const [adminNavItems, setAdminNavItems] = useState<NavLink[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function checkAdminStatus() {
@@ -22,11 +23,13 @@ export function useAdminNav(): NavLink[] {
       } catch (error) {
         // User is not admin, no admin nav items
         console.log("User is not admin");
+      } finally {
+        setIsLoading(false);
       }
     }
 
     checkAdminStatus();
   }, []);
 
-  return adminNavItems;
+  return { items: adminNavItems, isLoading };
 }
