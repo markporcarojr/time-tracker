@@ -36,7 +36,7 @@ export default function TimerClient(props: Job) {
   );
 
   // live display seconds (base + (now - startedAt) when ACTIVE)
-  const [displaySec, setDisplaySec] = useState<number>(0);
+  const [, setDisplaySec] = useState<number>(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const recalc = () => {
