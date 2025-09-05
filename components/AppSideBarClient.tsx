@@ -18,6 +18,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navMain, navSecondary } from "../data/navData";
+import { ModeToggle } from "./ThemeToggle";
 
 export default function AppSidebarClient() {
   const pathname = usePathname();
@@ -63,7 +64,10 @@ export default function AppSidebarClient() {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={main} isLoading={adminLoading} />
-        <NavSecondary items={secondary} className="mt-auto" />
+        {/* <NavSecondary items={secondary} className="mt-auto" /> */}
+        <div className="mt-auto p-4">
+          <ModeToggle />
+        </div>
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

@@ -1,11 +1,6 @@
 // src/config/nav-data.ts
 import type { Icon as TablerIcon } from "@tabler/icons-react";
-import {
-  IconBriefcase,
-  IconDashboard,
-  IconSettings,
-  IconTimeline,
-} from "@tabler/icons-react";
+import { IconDashboard, IconSettings } from "@tabler/icons-react";
 
 export type NavLink = {
   title: string;

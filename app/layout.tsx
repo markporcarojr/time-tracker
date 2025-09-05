@@ -5,6 +5,7 @@ import { Providers } from "@/providers";
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
 // app/layout.tsx
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,7 +30,13 @@ export default async function RootLayout({
               <AppSidebarServer />
               <main className="flex-1">
                 <SidebarTrigger />
-                {children}
+                <ThemeProvider
+                  attribute="class"
+                  defaultTheme="system"
+                  enableSystem
+                >
+                  {children}
+                </ThemeProvider>
               </main>
             </SidebarProvider>
             <Toaster position="top-right" />
