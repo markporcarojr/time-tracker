@@ -106,6 +106,7 @@ import {
   IconPlayerPlay,
 } from "@tabler/icons-react";
 import { Plus } from "lucide-react";
+import JobTimerDisplay from "@/components/JobTimerDisplay";
 type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
 
 /* ---------------- Types & Schema ---------------- */
@@ -114,13 +115,16 @@ type JobStatus = "ACTIVE" | "PAUSED" | "DONE";
 /* --------------- total cell (uses hooks) -------------- */
 
 function TotalCell({ job }: { job: Job }) {
-  const [, setTick] = React.useState(0);
-  React.useEffect(() => {
-    if (job.status !== "ACTIVE" || !job.startedAt) return;
-    const id = setInterval(() => setTick((n) => n + 1), 1000);
-    return () => clearInterval(id);
-  }, [job.status, job.startedAt]);
-  return <div className="text-right font-mono">{fmtHMS(liveTotalMs(job))}</div>;
+  return (
+    <div className="text-right font-mono">
+      <JobTimerDisplay
+        size="md"
+        status={job.status}
+        baseMs={job.totalMs}
+        startedAt={job.startedAt ? new Date(job.startedAt).getTime() : null}
+      />
+    </div>
+  );
 }
 
 /* --------------- DnD: pass handle props via context -------------- */

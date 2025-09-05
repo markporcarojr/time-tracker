@@ -1,6 +1,7 @@
 // app/jobs/[id]/TimerClient.tsx
 "use client";
 
+import JobTimerDisplay from "@/components/JobTimerDisplay";
 import {
   AlertDialogFooter,
   AlertDialogHeader,
@@ -8,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { fmtHMS } from "@/lib/utils";
 import { Job } from "@/types/prisma";
 import {
   AlertDialog,
@@ -167,25 +167,14 @@ export default function TimerClient(props: Job) {
         </div>
 
         {/* Right side: Time display */}
+        {/* Right side: Time display */}
         <div className="flex flex-col items-start md:items-end mt-4 md:mt-0 md:min-w-[200px]">
-          <div className="font-mono text-[42px] leading-none tracking-tight sm:text-[56px] font-bold text-foreground">
-            {fmtHMS(running ? displaySec : Math.floor(baseMs / 1000))}
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Total Saved:{" "}
-            <strong className="font-semibold text-foreground">
-              {fmtHMS(Math.floor(baseMs / 1000))}
-            </strong>
-            {running && (
-              <span className="ml-2 flex items-center text-primary animate-pulse">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                </span>
-                <span className="ml-2 text-xs">Live</span>
-              </span>
-            )}
-          </p>
+          <JobTimerDisplay
+            status={status}
+            baseMs={baseMs}
+            startedAt={startedAt}
+            size="xl"
+          />
         </div>
       </div>
 

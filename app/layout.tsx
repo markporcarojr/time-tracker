@@ -1,5 +1,5 @@
 import AppSidebarServer from "@/components/AppSidebarServer";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/providers";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -27,7 +27,10 @@ export default async function RootLayout({
           <Providers>
             <SidebarProvider>
               <AppSidebarServer />
-              <main className="flex-1">{children}</main>
+              <main className="flex-1">
+                <SidebarTrigger />
+                {children}
+              </main>
             </SidebarProvider>
             <Toaster position="top-right" />
           </Providers>
