@@ -26,8 +26,9 @@ export function JobsTable({ data }: { data: Job[] }) {
             <TableRow>
               <TableHead>Job</TableHead>
               <TableHead>Job #</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Total Hours</TableHead>
+              <TableHead className="hidden md:table-cell">
+                Total Hours
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -52,8 +53,7 @@ export function JobsTable({ data }: { data: Job[] }) {
                       ? job.jobNumber.toString().padStart(4, "0")
                       : "-"}
                   </TableCell>
-                  <TableCell>{job.status}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     {(job.totalMs / 1000 / 60 / 60).toFixed(1)} h
                   </TableCell>
                 </TableRow>
