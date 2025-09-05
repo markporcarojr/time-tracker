@@ -54,13 +54,13 @@ export default function JobsSearch({
   setSortDir,
   filteredSorted,
 }: JobsSearchProps) {
-  const counts = useMemo(() => {
-    const active = jobs.filter((j) => j.status === "ACTIVE").length;
-    const paused = jobs.filter((j) => j.status === "PAUSED").length;
-    const done = jobs.filter((j) => j.status === "DONE").length;
-    const totalMs = jobs.reduce((acc, j) => acc + j.totalMs, 0);
-    return { total: jobs.length, active, paused, done, totalMs };
-  }, [jobs]);
+  // const counts = useMemo(() => {
+  //   const active = jobs.filter((j) => j.status === "ACTIVE").length;
+  //   const paused = jobs.filter((j) => j.status === "PAUSED").length;
+  //   const done = jobs.filter((j) => j.status === "DONE").length;
+  //   const totalMs = jobs.reduce((acc, j) => acc + j.totalMs, 0);
+  //   return { total: jobs.length, active, paused, done, totalMs };
+  // }, [jobs]);
 
   return (
     <div className="space-y-6">
@@ -70,7 +70,7 @@ export default function JobsSearch({
           rounded-2xl border border-border/60 bg-card/70 backdrop-blur
         "
       >
-        <div className="grid grid-cols-2 gap-3 p-6 sm:grid-cols-5">
+        {/* <div className="grid grid-cols-2 gap-3 p-6 sm:grid-cols-5">
           <StatChip label="Total" value={counts.total} tone="muted" />
           <StatChip label="Active" value={counts.active} tone="emerald" />
           <StatChip label="Paused" value={counts.paused} tone="amber" />
@@ -81,7 +81,7 @@ export default function JobsSearch({
             suffix="h"
             tone="primary"
           />
-        </div>
+        </div> */}
       </section>
 
       {/* Toolbar */}
