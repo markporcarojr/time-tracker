@@ -6,6 +6,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import type { Icon as TablerIcon } from "@tabler/icons-react";
 import Link from "next/link";
@@ -18,10 +19,19 @@ export function NavMain({
   items: {
     title: string;
     url: string;
-    icon?: TablerIcon; // <- Tabler Icon type
-    isActive?: boolean; // <- boolean, not string
+    icon?: TablerIcon;
+    isActive?: boolean;
   }[];
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
+  const { setOpenMobile, isMobile } = useSidebar();
+
+  const handleLinkClick = () => {
+    // Only close on mobile
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
     <SidebarGroup {...props}>
       <SidebarGroupContent>
@@ -32,7 +42,7 @@ export function NavMain({
                 asChild
                 data-active={item.isActive ? true : undefined}
               >
-                <Link href={item.url}>
+                <Link href={item.url} onClick={handleLinkClick}>
                   {item.icon ? <item.icon /> : null}
                   <span>{item.title}</span>
                 </Link>
