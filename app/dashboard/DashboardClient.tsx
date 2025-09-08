@@ -66,7 +66,7 @@ export default function DashboardClient({ initialJobs }: DashboardClientProps) {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between space-x-4">
-        <h1 className="text-2xl font-bold m-6">{userName}'s Jobs</h1>
+        <h1 className="text-2xl font-bold m-6">{userName}&#39;s Jobs</h1>
         <Button
           asChild
           className="rounded-full px-5 py-5 text-base font-medium bg-gradient-to-r from-primary to-primary/70 text-primary-foreground shadow-sm hover:opacity-95 flex items-center gap-2"
