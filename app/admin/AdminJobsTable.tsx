@@ -1,8 +1,5 @@
 "use client";
 
-import { JobStatus } from "@/types/prisma";
-import { useEffect, useMemo, useState } from "react";
-
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,8 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { JobStatus } from "@/types/prisma";
 import { AlertCircle, RefreshCw, Timer } from "lucide-react";
+import { useEffect, useState } from "react";
 import { JobsTable } from "../dashboard/JobsTable";
 
 interface AdminJob {
@@ -35,9 +35,11 @@ interface AdminJob {
 
 export function AdminJobsTable() {
   const [jobs, setJobs] = useState<AdminJob[]>([]);
+  const [filteredJobs, setFilteredJobs] = useState<AdminJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState("");
 
   async function fetchJobs() {
     try {
@@ -50,10 +52,13 @@ export function AdminJobsTable() {
         throw new Error("Failed to fetch jobs");
       }
       const data = await response.json();
-      setJobs(Array.isArray(data?.jobs) ? data.jobs : []);
+      const jobsArray = Array.isArray(data?.jobs) ? data.jobs : [];
+      setJobs(jobsArray);
+      setFilteredJobs(jobsArray);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setJobs([]);
+      setFilteredJobs([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -64,24 +69,28 @@ export function AdminJobsTable() {
     fetchJobs();
   }, []);
 
+  useEffect(() => {
+    if (!search.trim()) {
+      setFilteredJobs(jobs);
+      return;
+    }
+    const lower = search.toLowerCase();
+    setFilteredJobs(
+      jobs.filter(
+        (j) =>
+          j.customerName.toLowerCase().includes(lower) ||
+          j.description?.toLowerCase().includes(lower) ||
+          j.user?.name?.toLowerCase().includes(lower) ||
+          j.user?.email?.toLowerCase().includes(lower) ||
+          j.jobNumber?.toString().includes(lower)
+      )
+    );
+  }, [search, jobs]);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchJobs();
   };
-
-  const formatTime = (ms: number) => {
-    if (!ms) return "0:00:00";
-    const hours = Math.floor(ms / 3_600_000);
-    const minutes = Math.floor((ms % 3_600_000) / 60_000);
-    const seconds = Math.floor((ms % 60_000) / 1_000);
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(
-      seconds
-    ).padStart(2, "0")}`;
-  };
-
-  const totalTracked = useMemo(() => {
-    return jobs.reduce((acc, j) => acc + (j?.totalMs || 0), 0);
-  }, [jobs]);
 
   if (loading) {
     return (
@@ -142,29 +151,27 @@ export function AdminJobsTable() {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <Timer className="h-5 w-5" />
-            Jobs
-          </CardTitle>
-          <CardDescription>
-            Admin view of all tracked jobs • Total time:{" "}
-            {formatTime(totalTracked)}
-          </CardDescription>
-        </div>
-        <Button variant="outline" onClick={onRefresh} disabled={refreshing}>
-          <RefreshCw
-            className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+    <div className="w-full flex-col justify-start gap-6">
+      <div className="flex items-center justify-around px-4 lg:px-6 mb-4">
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Search jobs..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-[200px] md:w-[300px] rounded-3xl"
           />
-          Refresh
-        </Button>
-      </CardHeader>
+          <Button variant="outline" onClick={onRefresh} disabled={refreshing}>
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
+        </div>
+      </div>
 
-      <CardContent className="p-0">
-        <JobsTable data={jobs} isAdmin={true} />
-      </CardContent>
-    </Card>
+      <div className="overflow-hidden rounded-lg border">
+        <JobsTable data={filteredJobs} isAdmin={true} />
+      </div>
+    </div>
   );
 }
