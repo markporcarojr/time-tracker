@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { Job } from "@/types/prisma";
+import { auth } from "@clerk/nextjs/server";
 import { toast } from "sonner";
 import DashboardClient from "./DashboardClient";
 

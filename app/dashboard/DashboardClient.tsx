@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { JobsTable } from "./JobsTable";
-import JobsSearch, {
-  type StatusFilter,
-  type SortKey,
-  type SortDir,
-} from "./JobsSearch";
-import type { Job } from "@/types/prisma";
 import { Button } from "@/components/ui/button";
+import type { Job } from "@/types/prisma";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
+import JobsSearch, {
+  type SortDir,
+  type SortKey,
+  type StatusFilter,
+} from "./JobsSearch";
+import { JobsTable } from "./JobsTable";
 
 interface DashboardClientProps {
   initialJobs: Job[];
@@ -61,7 +61,7 @@ export default function DashboardClient({ initialJobs }: DashboardClientProps) {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between space-x-4">
+      <div className="flex items-center justify-around space-x-4">
         <h1 className="text-2xl font-bold m-6">Jobs</h1>
         <Button
           asChild
