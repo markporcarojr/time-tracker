@@ -11,12 +11,16 @@ import JobsSearch, {
   type StatusFilter,
 } from "./JobsSearch";
 import { JobsTable } from "./JobsTable";
+import { useUser } from "@clerk/nextjs";
 
 interface DashboardClientProps {
   initialJobs: Job[];
 }
 
 export default function DashboardClient({ initialJobs }: DashboardClientProps) {
+  const { user } = useUser();
+  const userName =
+    user?.fullName || user?.username || user?.primaryEmailAddress?.emailAddress;
   const [jobs] = useState<Job[]>(initialJobs);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("ALL");
@@ -61,8 +65,8 @@ export default function DashboardClient({ initialJobs }: DashboardClientProps) {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-around space-x-4">
-        <h1 className="text-2xl font-bold m-6">Jobs</h1>
+      <div className="flex items-center justify-between space-x-4">
+        <h1 className="text-2xl font-bold m-6">{userName}'s Jobs</h1>
         <Button
           asChild
           className="rounded-full px-5 py-5 text-base font-medium bg-gradient-to-r from-primary to-primary/70 text-primary-foreground shadow-sm hover:opacity-95 flex items-center gap-2"

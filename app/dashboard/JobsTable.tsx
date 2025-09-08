@@ -1,7 +1,7 @@
 // JobsTable.tsx
-
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -10,9 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import Link from "next/link";
 
-// If you're passing jobs that include user info, use AdminJob instead of Job.
 type AdminJob = {
   id: number;
   jobNumber: number | null;
@@ -32,6 +30,8 @@ export function JobsTable({
   data: AdminJob[];
   isAdmin?: boolean;
 }) {
+  const router = useRouter();
+
   return (
     <div className="w-full flex-col justify-start gap-6">
       <div className="flex items-center justify-between px-4 lg:px-6 mb-4">
@@ -56,42 +56,40 @@ export function JobsTable({
           <TableBody>
             {data.length > 0 ? (
               data.map((job) => (
-                <Link
-                  href={`/jobs/${job.id}`}
-                  className="contents"
+                <TableRow
                   key={job.id}
+                  onClick={() => router.push(`/jobs/${job.id}`)}
+                  className="cursor-pointer hover:bg-muted"
                 >
-                  <TableRow className="cursor-pointer hover:bg-muted">
-                    <TableCell>
-                      {job.jobNumber !== null
-                        ? job.jobNumber.toString().padStart(4, "0")
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <span className="fw-extrabold text-xl">
-                        {job.customerName}
-                      </span>
-                      {job.description && (
-                        <div className="text-xs text-muted-foreground">
-                          {job.description}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {(job.totalMs / 1000 / 60 / 60).toFixed(1)} h
-                    </TableCell>
-                    {isAdmin && (
-                      <TableCell>
-                        <div className="text-sm font-medium">
-                          {job.user?.name ?? "Unknown"}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {job.user?.email ?? "—"}
-                        </div>
-                      </TableCell>
+                  <TableCell>
+                    {job.jobNumber !== null
+                      ? job.jobNumber.toString().padStart(4, "0")
+                      : "-"}
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-extrabold text-xl">
+                      {job.customerName}
+                    </span>
+                    {job.description && (
+                      <div className="text-xs text-muted-foreground">
+                        {job.description}
+                      </div>
                     )}
-                  </TableRow>
-                </Link>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {(job.totalMs / 1000 / 60 / 60).toFixed(1)} h
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <div className="text-sm font-medium">
+                        {job.user?.name ?? "Unknown"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {job.user?.email ?? "—"}
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
               ))
             ) : (
               <TableRow>

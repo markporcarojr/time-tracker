@@ -54,9 +54,5 @@ export default async function Page() {
     userId: j.userId,
   }));
 
-  return (
-    <div className="container mx-3 py-6">
-      <DashboardClient initialJobs={rows} />
-    </div>
-  );
+  return <DashboardClient initialJobs={rows} />;
 }
