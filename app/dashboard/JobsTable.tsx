@@ -44,8 +44,8 @@ export function JobsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Job #</TableHead>
-              <TableHead>Job</TableHead>
+              <TableHead className="font-extrabold">Job #</TableHead>
+              <TableHead className="font-extrabold">Job</TableHead>
               <TableHead className="hidden md:table-cell">
                 Total Hours
               </TableHead>
@@ -62,9 +62,11 @@ export function JobsTable({
                   className="cursor-pointer hover:bg-muted"
                 >
                   <TableCell>
-                    {job.jobNumber !== null
-                      ? job.jobNumber.toString().padStart(4, "0")
-                      : "-"}
+                    <span className="font-extrabold text-xl">
+                      {job.jobNumber !== null
+                        ? job.jobNumber.toString().padStart(4, "0")
+                        : "-"}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <span className="font-extrabold text-xl">
