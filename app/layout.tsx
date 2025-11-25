@@ -1,12 +1,13 @@
 import AppSidebarServer from "@/components/AppSidebarServer";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ThemeProvider } from "@/components/theme-provider";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"; // Import SidebarInset
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/providers";
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
-// app/layout.tsx
+import { SiteHeader } from "@/components/site-header";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
@@ -25,22 +26,29 @@ export default async function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body className="antialiased bg-background text-foreground">
-          <Providers>
-            <SidebarProvider>
-              <AppSidebarServer />
-              <main className="flex-1">
-                <SidebarTrigger />
-                <ThemeProvider
-                  attribute="class"
-                  defaultTheme="system"
-                  enableSystem
-                >
-                  {children}
-                </ThemeProvider>
-              </main>
-            </SidebarProvider>
-            <Toaster position="top-right" />
-          </Providers>
+          {/* ThemeProvider moved up so Sidebar gets themed too */}
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Providers>
+              <SidebarProvider>
+                <AppSidebarServer />
+                
+                {/* SidebarInset creates the column next to the sidebar */}
+                <SidebarInset>
+                  <SiteHeader />
+                  <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
+                    {children}
+                  </main>
+                </SidebarInset>
+
+              </SidebarProvider>
+              <Toaster position="top-right" />
+            </Providers>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

@@ -18,7 +18,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@radix-ui/react-alert-dialog";
+} from "@/components/ui/alert-dialog"; // Note: Ensure you import from your local UI component, not @radix-ui directly if you have custom styles
 import { Pencil, Play, Square, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -44,7 +44,6 @@ export default function TimerClient(props: Job) {
     setDisplaySec(Math.floor(liveMs / 1000));
   };
 
-  // inside TimerClient
   useEffect(() => {
     if (status !== "ACTIVE") return;
 
@@ -54,7 +53,7 @@ export default function TimerClient(props: Job) {
         const res = await fetch(`/api/jobs/${props.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "ACTIVE" }), // tell server it's still running
+          body: JSON.stringify({ status: "ACTIVE" }),
         });
 
         if (res.ok) {
@@ -83,7 +82,7 @@ export default function TimerClient(props: Job) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseMs, startedAt]);
 
-  // light polling to catch changes from other tabs
+  // light polling
   useEffect(() => {
     const id = setInterval(async () => {
       const res = await fetch(`/api/jobs/${props.id}`, {
@@ -98,7 +97,6 @@ export default function TimerClient(props: Job) {
     return () => clearInterval(id);
   }, [props.id]);
 
-  // Start => PATCH { status: "ACTIVE" } (server sets startedAt)
   const start = async () => {
     const res = await fetch(`/api/jobs/${props.id}`, {
       method: "PATCH",
@@ -107,7 +105,7 @@ export default function TimerClient(props: Job) {
     });
     if (res.ok) {
       const { job } = await res.json();
-      setStatus(job.status); // "ACTIVE"
+      setStatus(job.status);
       setBaseMs(job.totalMs);
       setStartedAt(
         job.startedAt ? new Date(job.startedAt).getTime() : Date.now()
@@ -116,7 +114,6 @@ export default function TimerClient(props: Job) {
     }
   };
 
-  // Stop => PATCH { status: "PAUSED" } (server accumulates totalMs, clears startedAt)
   const stop = async () => {
     const res = await fetch(`/api/jobs/${props.id}`, {
       method: "PATCH",
@@ -125,14 +122,12 @@ export default function TimerClient(props: Job) {
     });
     if (res.ok) {
       const { job } = await res.json();
-      setStatus(job.status); // "PAUSED"
+      setStatus(job.status);
       setBaseMs(job.totalMs);
       setStartedAt(job.startedAt ? new Date(job.startedAt).getTime() : null);
       router.refresh();
     }
   };
-
-  // Delete => DELETE
 
   const doDelete = async () => {
     try {
@@ -152,6 +147,9 @@ export default function TimerClient(props: Job) {
           err instanceof Error ? err.message : "Delete failed",
       });
 
+      // If this component is on the specific job page, you should redirect to the list:
+      // router.push('/jobs'); 
+      // If it's in a list, refresh is fine:
       router.refresh();
     } catch {
       // error handled by toast.promise
@@ -162,7 +160,6 @@ export default function TimerClient(props: Job) {
 
   return (
     <Card className="group relative overflow-hidden rounded-2xl border-2 border-border/80 bg-background shadow-lg transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl">
-      {/* Optional: Add a subtle linear gradient to the top for depth */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-border/50 via-transparent"
@@ -175,14 +172,12 @@ export default function TimerClient(props: Job) {
           backgroundImage:
             "linear-gradient(to right, var(--tw-ring) 1px, transparent 1px), linear-gradient(to bottom, var(--tw-ring) 1px, transparent 1px)",
           backgroundSize: "20px 20px",
-          // @ts-expect-error -- CSS custom property assignment not recognized by TypeScript
+          // @ts-expect-error -- CSS custom property assignment
           "--tw-ring": "hsl(var(--primary))",
         }}
       />
 
-      {/* Header and content are now side-by-side */}
       <div className="flex flex-col md:flex-row md:items-center p-6 md:p-8 md:gap-8">
-        {/* Left side: Job info */}
         <div className="min-w-0 md:flex-1">
           <CardTitle className="flex items-center gap-2">
             <span className="truncate">{props.customerName.toUpperCase()}</span>
@@ -197,8 +192,6 @@ export default function TimerClient(props: Job) {
           )}
         </div>
 
-        {/* Right side: Time display */}
-        {/* Right side: Time display */}
         <div className="flex flex-col items-start md:items-end mt-4 md:mt-0 md:min-w-[200px]">
           <JobTimerDisplay
             status={status}
@@ -211,9 +204,7 @@ export default function TimerClient(props: Job) {
 
       <Separator />
 
-      {/* Button group */}
       <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Edit Button */}
         <Button
           onClick={() => router.push(`/jobs/${props.id}/edit`)}
           variant="outline"
@@ -223,7 +214,6 @@ export default function TimerClient(props: Job) {
           Edit Job
         </Button>
 
-        {/* Start/Stop Button */}
         {!running ? (
           <Button
             onClick={start}
@@ -244,7 +234,7 @@ export default function TimerClient(props: Job) {
           </Button>
         )}
 
-        {/* Delete Button */}
+        {/* Delete Button with Trigger Pattern */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" className="w-full">
@@ -254,17 +244,21 @@ export default function TimerClient(props: Job) {
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>
-                Delete &quot;{props.jobNumber}&quot;?
-              </AlertDialogTitle>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently remove the job and all timing data. This
-                action cannot be undone.
+                This action cannot be undone. This will permanently delete job{" "}
+                <span className="font-semibold">{props.jobNumber}</span> and all
+                associated timing data.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={doDelete}>Delete</AlertDialogAction>
+              <AlertDialogAction
+                onClick={doDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

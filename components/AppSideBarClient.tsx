@@ -2,7 +2,6 @@
 "use client";
 
 import { NavMain } from "@/components/nav-main";
-import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/NavUser";
 import {
   Sidebar,
@@ -17,8 +16,7 @@ import { useAdminNav } from "@/hooks/useAdminNav";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { navMain, navSecondary } from "../data/navData";
-import { ModeToggle } from "./ThemeToggle";
+import { navMain } from "../data/navData";
 
 export default function AppSidebarClient() {
   const pathname = usePathname();
@@ -32,10 +30,7 @@ export default function AppSidebarClient() {
     isActive: pathname === item.url || pathname?.startsWith(item.url + "/"),
   }));
 
-  const secondary = navSecondary.map((item) => ({
-    ...item,
-    isActive: pathname === item.url || pathname?.startsWith(item.url + "/"),
-  }));
+ 
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -66,7 +61,6 @@ export default function AppSidebarClient() {
         <NavMain items={main} isLoading={adminLoading} />
         {/* <NavSecondary items={secondary} className="mt-auto" /> */}
         <div className="mt-auto p-4">
-          <ModeToggle />
         </div>
       </SidebarContent>
       <SidebarFooter>
